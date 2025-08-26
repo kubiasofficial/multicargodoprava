@@ -112,11 +112,31 @@ function showDiscordProfile(user) {
         <span style='color:#fff;font-weight:bold;'>${user.username}</span>
       </div>
     `;
-    // Kliknutí na profil otevře modal
+    // Kliknutí na profil otevře modal a obsluhu modalových tlačítek
     const clickable = document.getElementById('profile-clickable');
     if (clickable) {
       clickable.onclick = () => {
         document.getElementById('work-modal').classList.add('active');
+        // Obsluha zavření modalu
+        const closeBtn = document.getElementById('work-modal-close');
+        if (closeBtn) {
+          closeBtn.onclick = () => {
+            document.getElementById('work-modal').classList.remove('active');
+          };
+        }
+        // Obsluha tlačítek příchod/odchod
+        const arrivalBtn = document.getElementById('work-arrival');
+        if (arrivalBtn) {
+          arrivalBtn.onclick = () => {
+            document.getElementById('work-modal').classList.remove('active');
+          };
+        }
+        const leaveBtn = document.getElementById('work-leave');
+        if (leaveBtn) {
+          leaveBtn.onclick = () => {
+            document.getElementById('work-modal').classList.remove('active');
+          };
+        }
       };
     }
 
