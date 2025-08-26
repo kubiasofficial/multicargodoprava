@@ -155,13 +155,25 @@ function showDiscordProfile(user) {
         arrivalBtn.onclick = () => {
           document.getElementById('work-modal').classList.remove('active');
           // Odeslání zprávy na Discord webhook
+          const now = new Date();
+          const timeString = now.toLocaleString('cs-CZ');
           fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              content: `Uživatel ${user.username} přišel do práce.`
+              embeds: [{
+                title: 'Příchod do práce',
+                description: `Uživatel **${user.username}** přišel do práce.`,
+                color: 0x43b581,
+                thumbnail: {
+                  url: user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : undefined
+                },
+                footer: {
+                  text: `Čas: ${timeString}`
+                }
+              }]
             })
           });
         };
@@ -172,13 +184,25 @@ function showDiscordProfile(user) {
           console.log('Kliknutí na Odchod!');
           document.getElementById('work-modal').classList.remove('active');
           // Odeslání zprávy na Discord webhook
+          const now = new Date();
+          const timeString = now.toLocaleString('cs-CZ');
           fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              content: `Uživatel ${user.username} odešel z práce.`
+              embeds: [{
+                title: 'Odchod z práce',
+                description: `Uživatel **${user.username}** odešel z práce.`,
+                color: 0xf04747,
+                thumbnail: {
+                  url: user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : undefined
+                },
+                footer: {
+                  text: `Čas: ${timeString}`
+                }
+              }]
             })
           });
         };
