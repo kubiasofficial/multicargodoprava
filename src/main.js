@@ -154,6 +154,16 @@ function showDiscordProfile(user) {
       if (arrivalBtn) {
         arrivalBtn.onclick = () => {
           document.getElementById('work-modal').classList.remove('active');
+          // Odeslání zprávy na Discord webhook
+          fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: `Uživatel ${user.username} přišel do práce.`
+            })
+          });
         };
       }
       const leaveBtn = document.getElementById('work-leave');
@@ -161,6 +171,16 @@ function showDiscordProfile(user) {
         leaveBtn.onclick = () => {
           console.log('Kliknutí na Odchod!');
           document.getElementById('work-modal').classList.remove('active');
+          // Odeslání zprávy na Discord webhook
+          fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: `Uživatel ${user.username} odešel z práce.`
+            })
+          });
         };
       }
       console.log('Modal by měl být aktivní:', document.getElementById('work-modal').classList);
