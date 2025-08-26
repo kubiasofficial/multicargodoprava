@@ -21,6 +21,11 @@ function setPage(page) {
     case 'ridic':
       pageTitle.textContent = 'Řidič';
       pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič zatím není hotová.</h2>';
+      background.style.background = "url('/Pictures/bus.png') center center/cover no-repeat";
+      break;
+    case 'prehled':
+      pageTitle.textContent = 'Přehled';
+      pageContent.innerHTML = '';
       background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
       break;
     default:
