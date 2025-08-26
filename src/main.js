@@ -156,12 +156,14 @@ function showDiscordProfile(user) {
           document.getElementById('work-modal').classList.remove('active');
         };
       }
-      const leaveBtn = document.getElementById('work-modal');
+      const leaveBtn = document.getElementById('work-leave');
       if (leaveBtn) {
         leaveBtn.onclick = () => {
+          console.log('Kliknutí na Odchod!');
           document.getElementById('work-modal').classList.remove('active');
         };
       }
+      console.log('Modal by měl být aktivní:', document.getElementById('work-modal').classList);
     };
   } else {
     console.warn('profile-clickable nenalezen, event handler nenavázán!');
