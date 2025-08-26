@@ -1,3 +1,41 @@
+#work-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+#work-modal.active {
+  display: flex;
+}
+
+.employee-table {
+  width: 100%;
+  max-width: 500px;
+  margin: 32px auto 0 auto;
+  background: rgba(44,47,51,0.85);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  color: #fff;
+  border-collapse: collapse;
+}
+.employee-table th, .employee-table td {
+  padding: 12px 18px;
+  border-bottom: 1px solid #333;
+}
+.employee-table th {
+  background: #23272a;
+  font-weight: bold;
+}
+.employee-table tr:last-child td {
+  border-bottom: none;
+}
 #page-content.fade-out {
   opacity: 0;
   transition: opacity 0.3s ease;

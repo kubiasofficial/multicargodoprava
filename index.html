@@ -12,6 +12,14 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   </head>
   <body>
+  <div id="work-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:#23272a;padding:32px 40px;border-radius:16px;box-shadow:0 2px 16px #000;text-align:center;min-width:300px;position:relative;">
+      <button id="work-modal-close" style="position:absolute;top:12px;right:16px;background:none;border:none;color:#fff;font-size:1.5em;cursor:pointer;">&times;</button>
+      <h2 style="color:#fff;margin-bottom:24px;">Zvolte akci</h2>
+      <button id="work-arrival" style="background:#43b581;color:#fff;padding:12px 32px;border-radius:8px;font-size:1.1em;margin-bottom:12px;border:none;cursor:pointer;width:100%;">Příchod do práce</button>
+      <button id="work-leave" style="background:#f04747;color:#fff;padding:12px 32px;border-radius:8px;font-size:1.1em;border:none;cursor:pointer;width:100%;">Odchod z práce</button>
+    </div>
+  </div>
   <div id="discord-profile-container"></div>
   <div id="discord-modal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:1000;display:flex;align-items:center;justify-content:center;">
       <div style="background:#23272a;padding:32px 40px;border-radius:16px;box-shadow:0 2px 16px #000;text-align:center;min-width:300px;">
