@@ -1,13 +1,29 @@
-<!doctype html>
-<html lang="cz">
+
+<!DOCTYPE html>
+<html lang="cs">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
+    <title>MultiCargoDoprava</title>
+    <link rel="stylesheet" href="src/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="background"></div>
+    <div class="container">
+      <aside class="sidebar">
+        <img src="/MultiCargoDoprava.png" alt="Logo" class="logo">
+        <nav class="nav">
+          <button class="nav-btn" data-page="strojvedouci"><i class="fa-solid fa-train"></i> Strojvedoucí</button>
+          <button class="nav-btn" data-page="vypravci"><i class="fa-solid fa-user-tie"></i> Výpravčí</button>
+          <button class="nav-btn" data-page="ridic"><i class="fa-solid fa-truck"></i> Řidič</button>
+        </nav>
+      </aside>
+      <main class="main-content">
+        <h1 class="page-title">Přehled</h1>
+        <div id="page-content"></div>
+      </main>
+    </div>
+    <script type="module" src="src/main.js"></script>
   </body>
 </html>

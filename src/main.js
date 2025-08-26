@@ -1,24 +1,33 @@
-import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+// SPA navigation (zatím jen přehled, ostatní stránky prázdné)
+const pageTitle = document.querySelector('.page-title');
+const pageContent = document.getElementById('page-content');
+const navBtns = document.querySelectorAll('.nav-btn');
 
-setupCounter(document.querySelector('#counter'))
+function setPage(page) {
+  switch(page) {
+    case 'strojvedouci':
+      pageTitle.textContent = 'Strojvedoucí';
+      pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí zatím není hotová.</h2>';
+      break;
+    case 'vypravci':
+      pageTitle.textContent = 'Výpravčí';
+      pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí zatím není hotová.</h2>';
+      break;
+    case 'ridic':
+      pageTitle.textContent = 'Řidič';
+      pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič zatím není hotová.</h2>';
+      break;
+    default:
+      pageTitle.textContent = 'Přehled';
+      pageContent.innerHTML = '';
+  }
+}
+
+navBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    setPage(btn.dataset.page);
+  });
+});
+
+setPage();
