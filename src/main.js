@@ -89,24 +89,14 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function showDiscordProfile(user) {
-  // Vytvoření/umístění do panelu vlevo dole
-  let sidebar = document.querySelector('.sidebar');
-  if (!sidebar) return;
+  // Vytvoření/umístění do pravého horního rohu
+  let container = document.getElementById('discord-profile-container');
+  if (!container) return;
   let profileDiv = document.getElementById('discord-profile');
   if (!profileDiv) {
     profileDiv = document.createElement('div');
     profileDiv.id = 'discord-profile';
-    profileDiv.style.position = 'absolute';
-    profileDiv.style.left = '0';
-    profileDiv.style.bottom = '24px';
-    profileDiv.style.width = '100%';
-    profileDiv.style.display = 'flex';
-    profileDiv.style.alignItems = 'center';
-    profileDiv.style.justifyContent = 'center';
-    profileDiv.style.gap = '12px';
-    profileDiv.style.background = 'rgba(44,47,51,0.7)';
-    profileDiv.style.padding = '8px 0';
-    sidebar.appendChild(profileDiv);
+    container.appendChild(profileDiv);
   }
   profileDiv.innerHTML = `<img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='pfp' style='width:32px;height:32px;border-radius:50%;background:#222;'> <span style='color:#fff;font-weight:bold;'>${user.username}</span>`;
 

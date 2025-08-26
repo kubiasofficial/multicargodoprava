@@ -1,16 +1,15 @@
 #discord-profile {
-  position: absolute;
-  left: 0;
-  bottom: 24px;
-  width: 100%;
+  position: fixed;
+  top: 24px;
+  right: 32px;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  background: rgba(44,47,51,0.7);
-  padding: 8px 0;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
-  z-index: 10;
+  background: rgba(44,47,51,0.85);
+  padding: 8px 18px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  z-index: 1001;
 }
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
