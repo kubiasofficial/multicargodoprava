@@ -106,7 +106,19 @@ function showDiscordProfile(user) {
     profileDiv.id = 'discord-profile';
     container.appendChild(profileDiv);
   }
-  profileDiv.innerHTML = `<img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='pfp' style='width:32px;height:32px;border-radius:50%;background:#222;'> <span style='color:#fff;font-weight:bold;'>${user.username}</span>`;
+    profileDiv.innerHTML = `
+      <div id="profile-clickable" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+        <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='pfp' style='width:32px;height:32px;border-radius:50%;background:#222;'>
+        <span style='color:#fff;font-weight:bold;'>${user.username}</span>
+      </div>
+    `;
+    // Kliknutí na profil otevře modal
+    const clickable = document.getElementById('profile-clickable');
+    if (clickable) {
+      clickable.onclick = () => {
+        document.getElementById('work-modal').classList.add('active');
+      };
+    }
 
   // Zápis uživatele do Firebase Realtime Database
   db.ref('users/' + user.id).set({
