@@ -1,3 +1,11 @@
+#page-content.fade-out {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+#page-content.fade-in {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
 #discord-profile {
   position: fixed;
   top: 24px;
