@@ -16,7 +16,7 @@ function setPage(page) {
     case 'vypravci':
       pageTitle.textContent = 'Výpravčí';
       pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí zatím není hotová.</h2>';
-      background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
+      background.style.background = "url('/Pictures/Koluszki.png') center center/cover no-repeat";
       break;
     case 'ridic':
       pageTitle.textContent = 'Řidič';
