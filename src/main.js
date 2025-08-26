@@ -114,6 +114,7 @@ function showDiscordProfile(user) {
     profileDiv.id = 'discord-profile';
     container.appendChild(profileDiv);
   }
+  console.log('showDiscordProfile called, user:', user);
   if (!user || !user.id || !user.username) {
     profileDiv.innerHTML = `
       <div id="profile-clickable" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
@@ -128,8 +129,10 @@ function showDiscordProfile(user) {
       </div>
     `;
   }
+  console.log('profileDiv innerHTML set:', profileDiv.innerHTML);
     // Kliknutí na profil otevře modal a obsluhu modalových tlačítek
     const clickable = document.getElementById('profile-clickable');
+  console.log('profile-clickable element:', clickable);
     if (clickable) {
       clickable.onclick = () => {
         console.log('Kliknutí na profil!');
@@ -156,6 +159,9 @@ function showDiscordProfile(user) {
         }
       };
     }
+  else {
+    console.warn('profile-clickable nenalezen, event handler nenavázán!');
+  }
 
   // Zápis uživatele do Firebase Realtime Database
   db.ref('users/' + user.id).set({
