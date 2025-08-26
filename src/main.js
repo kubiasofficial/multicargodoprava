@@ -114,7 +114,7 @@ function showDiscordProfile(user) {
     profileDiv.id = 'discord-profile';
     container.appendChild(profileDiv);
   }
-  console.log('showDiscordProfile called, user:', user);
+
   if (!user || !user.id || !user.username) {
     profileDiv.innerHTML = `
       <div id="profile-clickable" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
@@ -129,39 +129,6 @@ function showDiscordProfile(user) {
       </div>
     `;
   }
-  console.log('profileDiv innerHTML set:', profileDiv.innerHTML);
-    // Kliknutí na profil otevře modal a obsluhu modalových tlačítek
-    const clickable = document.getElementById('profile-clickable');
-  console.log('profile-clickable element:', clickable);
-    if (clickable) {
-      clickable.onclick = () => {
-        console.log('Kliknutí na profil!');
-        document.getElementById('work-modal').classList.add('active');
-        // Obsluha zavření modalu
-        const closeBtn = document.getElementById('work-modal-close');
-        if (closeBtn) {
-          closeBtn.onclick = () => {
-            document.getElementById('work-modal').classList.remove('active');
-          };
-        }
-        // Obsluha tlačítek příchod/odchod
-        const arrivalBtn = document.getElementById('work-arrival');
-        if (arrivalBtn) {
-          arrivalBtn.onclick = () => {
-            document.getElementById('work-modal').classList.remove('active');
-          };
-        }
-        const leaveBtn = document.getElementById('work-leave');
-        if (leaveBtn) {
-          leaveBtn.onclick = () => {
-            document.getElementById('work-modal').classList.remove('active');
-          };
-        }
-      };
-    }
-  else {
-    console.warn('profile-clickable nenalezen, event handler nenavázán!');
-  }
 
   // Zápis uživatele do Firebase Realtime Database
   db.ref('users/' + user.id).set({
@@ -169,6 +136,36 @@ function showDiscordProfile(user) {
     avatar: user.avatar,
     id: user.id
   });
+
+  // Navázání event handleru na profile-clickable až po zápisu do Firebase
+  const clickable = document.getElementById('profile-clickable');
+  if (clickable) {
+    clickable.onclick = () => {
+      document.getElementById('work-modal').classList.add('active');
+      // Obsluha zavření modalu
+      const closeBtn = document.getElementById('work-modal-close');
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          document.getElementById('work-modal').classList.remove('active');
+        };
+      }
+      // Obsluha tlačítek příchod/odchod
+      const arrivalBtn = document.getElementById('work-arrival');
+      if (arrivalBtn) {
+        arrivalBtn.onclick = () => {
+          document.getElementById('work-modal').classList.remove('active');
+        };
+      }
+      const leaveBtn = document.getElementById('work-modal');
+      if (leaveBtn) {
+        leaveBtn.onclick = () => {
+          document.getElementById('work-modal').classList.remove('active');
+        };
+      }
+    };
+  } else {
+    console.warn('profile-clickable nenalezen, event handler nenavázán!');
+  }
 }
 
 setPage();
