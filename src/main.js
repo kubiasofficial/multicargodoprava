@@ -10,6 +10,11 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+// Firebase Authentication
+if (!firebase.auth) {
+  alert('Chybí Firebase Auth SDK! Přidejte <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> do index.html.');
+}
+const auth = firebase.auth();
 
 // SPA navigation (zatím jen přehled, ostatní stránky prázdné)
 const pageTitle = document.querySelector('.page-title');
@@ -127,6 +132,7 @@ function showDiscordProfile(user) {
     const clickable = document.getElementById('profile-clickable');
     if (clickable) {
       clickable.onclick = () => {
+        console.log('Kliknutí na profil!');
         document.getElementById('work-modal').classList.add('active');
         // Obsluha zavření modalu
         const closeBtn = document.getElementById('work-modal-close');
