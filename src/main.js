@@ -31,17 +31,17 @@ function setPage(page) {
     switch(page) {
       case 'strojvedouci':
         pageTitle.textContent = 'Strojvedoucí';
-        pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí zatím není hotová.</h2>';
+        pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí je ve vývooji.</h2>';
         background.style.background = "url('/Pictures/1185.png') center center/cover no-repeat";
         break;
       case 'vypravci':
         pageTitle.textContent = 'Výpravčí';
-        pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí zatím není hotová.</h2>';
+        pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí je ve vývooji.</h2>';
         background.style.background = "url('/Pictures/Koluszki.png') center center/cover no-repeat";
         break;
       case 'ridic':
         pageTitle.textContent = 'Řidič';
-        pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič zatím není hotová.</h2>';
+        pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič je ve vývooji.</h2>';
         background.style.background = "url('/Pictures/bus.png') center center/cover no-repeat";
         break;
       case 'prehled':
