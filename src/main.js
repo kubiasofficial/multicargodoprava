@@ -99,19 +99,26 @@ window.addEventListener('DOMContentLoaded', () => {
 function showDiscordProfile(user) {
   // Vytvoření/umístění do pravého horního rohu
   let container = document.getElementById('discord-profile-container');
-  if (!container) return;
+  if (!container) {
+    alert('Chyba: Element pro profil nebyl nalezen.');
+    return;
+  }
   let profileDiv = document.getElementById('discord-profile');
   if (!profileDiv) {
     profileDiv = document.createElement('div');
     profileDiv.id = 'discord-profile';
     container.appendChild(profileDiv);
   }
-    profileDiv.innerHTML = `
-      <div id="profile-clickable" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
-        <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='pfp' style='width:32px;height:32px;border-radius:50%;background:#222;'>
-        <span style='color:#fff;font-weight:bold;'>${user.username}</span>
-      </div>
-    `;
+  if (!user || !user.id || !user.username) {
+    profileDiv.innerHTML = '<span style="color:#fff">Nepřihlášený uživatel</span>';
+    return;
+  }
+  profileDiv.innerHTML = `
+    <div id="profile-clickable" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+      <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='pfp' style='width:32px;height:32px;border-radius:50%;background:#222;'>
+      <span style='color:#fff;font-weight:bold;'>${user.username}</span>
+    </div>
+  `;
     // Kliknutí na profil otevře modal a obsluhu modalových tlačítek
     const clickable = document.getElementById('profile-clickable');
     if (clickable) {
