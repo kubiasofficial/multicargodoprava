@@ -1,3 +1,15 @@
+// Firebase inicializace
+const firebaseConfig = {
+  apiKey: "ATasYBexZoBfDYNqIu2r5RM9v8sNV6cV1dJU",
+  authDomain: "multicargodoprava-fe1d5.firebaseapp.com",
+  databaseURL: "https://multicargodoprava-fe1d5-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "multicargodoprava-fe1d5",
+  storageBucket: "multicargodoprava-fe1d5.appspot.com",
+  messagingSenderId: "353118042486",
+  appId: "1:353118042486:web:abdf8ba27613d27ddde257"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // SPA navigation (zatím jen přehled, ostatní stránky prázdné)
 const pageTitle = document.querySelector('.page-title');
@@ -97,6 +109,13 @@ function showDiscordProfile(user) {
     sidebar.appendChild(profileDiv);
   }
   profileDiv.innerHTML = `<img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='pfp' style='width:32px;height:32px;border-radius:50%;background:#222;'> <span style='color:#fff;font-weight:bold;'>${user.username}</span>`;
+
+  // Zápis uživatele do Firebase Realtime Database
+  db.ref('users/' + user.id).set({
+    username: user.username,
+    avatar: user.avatar,
+    id: user.id
+  });
 }
 
 setPage();
