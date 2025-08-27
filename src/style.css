@@ -452,3 +452,65 @@ body {
   from { opacity: 0; transform: translateY(24px);}
   to { opacity: 1; transform: translateY(0);}
 }
+
+.trains-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 12px;
+}
+.train-card {
+  background: linear-gradient(90deg, #23272a 80%, #43b58122 100%);
+  border-radius: 14px;
+  box-shadow: 0 2px 12px #181a2099;
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  animation: fadeInUp 0.5s;
+}
+.train-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 24px #43b58144;
+  border: 2px solid #43b581;
+}
+.train-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.train-image {
+  width: 64px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #181a20;
+  box-shadow: 0 2px 8px #23272a55;
+}
+.train-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+.train-number {
+  font-size: 1.15em;
+  font-weight: bold;
+  color: #fff;
+}
+.train-name {
+  font-size: 1em;
+  color: #43b581;
+  font-weight: bold;
+}
+.train-route {
+  font-size: 0.95em;
+  color: #aaa;
+}
+.train-status {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-left: auto;
+}

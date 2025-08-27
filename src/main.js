@@ -451,7 +451,6 @@ function showServerModal() {
             servers.forEach(server => {
                 const status = server.IsActive ? 'Online' : 'Offline';
                 const statusColor = server.IsActive ? '#43b581' : '#f04747';
-                // Pokud server má vlastnost PlayerCount, zobrazíme ji
                 let playersHtml = '';
                 if (typeof server.PlayerCount !== 'undefined') {
                     playersHtml = `
@@ -461,8 +460,9 @@ function showServerModal() {
                         </span>
                     `;
                 }
+                // Přidáme onclick na server-card
                 list.innerHTML += `
-                    <div class="server-card" style="animation: fadeInUp 0.5s;">
+                    <div class="server-card" style="animation: fadeInUp 0.5s;" data-server-id="${server.id}">
                         <div class="server-header">
                             <span class="server-name">${server.ServerName}</span>
                             <span class="server-region">${server.ServerRegion}</span>
@@ -476,9 +476,115 @@ function showServerModal() {
                     </div>
                 `;
             });
+            // Event handler pro výběr serveru
+            document.querySelectorAll('.server-card').forEach(card => {
+                card.onclick = () => {
+                    const serverId = card.getAttribute('data-server-id');
+                    const server = servers.find(s => s.id === serverId);
+                    if (server) {
+                        document.getElementById('server-modal').remove();
+                        showTrainsModal(server);
+                    }
+                };
+            });
         })
         .catch(() => {
             document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+}
+
+// Mapování typů vozidel na obrázky
+const vehicleImages = {
+    'eu07': 'https://wiki.simrail.eu/vehicle/eu07-005.jpg',
+    'ep08': 'https://wiki.simrail.eu/vehicle/ep08-001.jpg',
+    'et22': 'https://wiki.simrail.eu/vehicle/et22-243.png',
+    'et25': 'https://wiki.simrail.eu/vehicle/et25-002.jpg',
+    'e186': 'https://wiki.simrail.eu/vehicle/e186-134.jpg',
+    'ed250': 'https://wiki.simrail.eu/vehicle/ed250-001.png',
+    'en57': 'https://wiki.simrail.eu/vehicle/en57-009.png',
+    'en76': 'https://wiki.simrail.eu/vehicle/en76-006.jpg'
+};
+const defaultTrainImage = 'https://wiki.simrail.eu/vehicle/eu07-005.jpg'; // fallback
+
+function getVehicleImage(vehiclesArr) {
+    if (!vehiclesArr || vehiclesArr.length === 0) return defaultTrainImage;
+    // Vezmeme první vozidlo, např. "EN57/EN57-1000"
+    const firstVehicle = vehiclesArr[0].toLowerCase();
+    // Najdeme typ (např. "en57")
+    const typeMatch = firstVehicle.match(/([a-z0-9]+)/);
+    if (typeMatch) {
+        const type = typeMatch[1];
+        if (vehicleImages[type]) return vehicleImages[type];
+    }
+    return defaultTrainImage;
+}
+
+function showTrainsModal(server) {
+    // Pokud modal už existuje, smažeme ho
+    let oldModal = document.getElementById('trains-modal');
+    if (oldModal) oldModal.remove();
+
+    // Vytvoření modalu
+    const modal = document.createElement('div');
+    modal.id = 'trains-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Vlaky na serveru ${server.ServerName}</h2>
+            <div id="trains-list" class="trains-list">
+                <div class="servers-loading">Načítám vlaky...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Načtení vlaků z API
+    fetch(`https://panel.simrail.eu:8084/trains-open?serverCode=${server.ServerCode}`)
+        .then(res => res.json())
+        .then(data => {
+            const trains = data.data || [];
+            const list = document.getElementById('trains-list');
+            if (trains.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné vlaky nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            trains.forEach(train => {
+                // Získání obrázku podle typu vozidla
+                const trainImg = getVehicleImage(train.Vehicles);
+                // Status hráč/bot
+                const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
+                const status = isPlayer ? 'Hráč' : 'Bot';
+                const statusColor = isPlayer ? '#43b581' : '#f04747';
+                // Trasa
+                const route = `${train.StartStation} → ${train.EndStation}`;
+                list.innerHTML += `
+                    <div class="train-card" style="animation: fadeInUp 0.5s;">
+                        <div class="train-header">
+                            <img src="${trainImg}" alt="Vlak" class="train-image">
+                            <div class="train-info">
+                                <div class="train-number">${train.TrainNoLocal}</div>
+                                <div class="train-name">${train.TrainName}</div>
+                                <div class="train-route">${route}</div>
+                            </div>
+                            <span class="train-status" style="color:${statusColor};font-weight:bold;">
+                                ${status}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+        })
+        .catch(() => {
+            document.getElementById('trains-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst vlaky.</div>';
         });
 }
 
