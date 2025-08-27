@@ -575,26 +575,19 @@ function showServerModal() {
             }
             list.innerHTML = '';
             servers.forEach(server => {
-                // Stav serveru
-                let status = 'Neznámý';
-                let statusColor = '#aaa';
-                if (server.Online) {
-                    status = 'Online';
-                    statusColor = '#43b581';
-                } else {
-                    status = 'Offline';
-                    statusColor = '#f04747';
-                }
+                // Oprava detekce online stavu serveru:
+                // Správný klíč je pravděpodobně server.IsActive (ne server.Online)
+                const status = server.IsActive ? 'Online' : 'Offline';
+                const statusColor = server.IsActive ? '#43b581' : '#f04747';
 
                 // Počet hráčů
                 let playersHtml = '';
-                if (server.Players && server.MaxPlayers) {
-                    const percent = Math.round((server.Players / server.MaxPlayers) * 100);
+                if (typeof server.PlayerCount !== 'undefined') {
                     playersHtml = `
-                        <div class="server-players" style="display:flex;align-items:center;gap:6px;">
-                            <div class="server-player-fill" style="width:${percent}%;background:${statusColor};height:4px;border-radius:2px;"></div>
-                            <div class="server-player-count" style="color:#fff;font-size:0.9em;">${server.Players}/${server.MaxPlayers}</div>
-                        </div>
+                        <span class="server-players">
+                            <svg width="20" height="20" style="vertical-align:middle;margin-right:4px;" fill="#43b581" viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+                            ${server.PlayerCount} hráčů
+                        </span>
                     `;
                 }
 
@@ -613,14 +606,13 @@ function showServerModal() {
                     </div>
                 `;
             });
-            // Oprava: po kliknutí na server rovnou zobrazíme výběr vlaků
             document.querySelectorAll('.server-card').forEach(card => {
                 card.onclick = () => {
                     const serverId = card.getAttribute('data-server-id');
                     const server = servers.find(s => s.id === serverId);
                     if (server) {
                         document.getElementById('server-modal').remove();
-                        showTrainsModal(server); // přímo výběr vlaků
+                        showTrainsModal(server);
                     }
                 };
             });
