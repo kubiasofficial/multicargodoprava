@@ -414,98 +414,8 @@ function showDiscordProfile(user) {
     }
 }
 
-// Pomocná funkce pro získání unikátních tříd vlaků z dat
-function extractTrainClasses(trains) {
-    const classSet = new Set();
-    trains.forEach(train => {
-        if (train.TrainName) {
-            // Třída je první část před " - " nebo první slovo
-            const match = train.TrainName.match(/^([A-Z0-9]+)[\s\-]/);
-            if (match) classSet.add(match[1]);
-        }
-    });
-    return Array.from(classSet);
-}
-
-// Pomocná funkce pro zjištění třídy vlaku podle jména
-function getTrainClass(train) {
-    if (train.TrainName) {
-        const match = train.TrainName.match(/^([A-Z0-9]+)[\s\-]/);
-        if (match) return match[1];
-    }
-    return null;
-}
-
-// Výběr třídy vlaku - dynamicky podle dat ze serveru
-function showTrainClassModal(server) {
-    // Načteme vlaky pro daný server, získáme třídy
-    fetch(`https://panel.simrail.eu:8084/trains-open?serverCode=${server.ServerCode}`)
-        .then(res => res.json())
-        .then(data => {
-            const trains = data.data || [];
-            const classes = extractTrainClasses(trains);
-
-            let oldModal = document.getElementById('train-class-modal');
-            if (oldModal) oldModal.remove();
-
-            const modal = document.createElement('div');
-            modal.id = 'train-class-modal';
-            modal.className = 'server-modal';
-            modal.innerHTML = `
-                <div class="server-modal-content" style="max-width:520px;">
-                    <span class="server-modal-close">&times;</span>
-                    <h2 style="text-align:center;margin-bottom:24px;">Vyber třídu vlaku</h2>
-                    <div id="train-class-list" style="display:flex;flex-wrap:wrap;gap:22px;justify-content:center;">
-                        ${classes.map(cls => `
-                            <div class="train-class-bubble" data-class="${cls}">
-                                <div class="train-class-title" style="color:#ffe066;">${cls}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            setTimeout(() => { modal.classList.add('active'); }, 10);
-
-            modal.querySelector('.server-modal-close').onclick = () => {
-                modal.classList.remove('active');
-                setTimeout(() => modal.remove(), 300);
-            };
-
-            document.querySelectorAll('.train-class-bubble').forEach(bubble => {
-                bubble.onclick = () => {
-                    const selectedClass = bubble.getAttribute('data-class');
-                    modal.classList.remove('active');
-                    setTimeout(() => modal.remove(), 300);
-                    showTrainsModal(server, selectedClass);
-                };
-            });
-        })
-        .catch(() => {
-            // fallback: zobrazit prázdný modal
-            let oldModal = document.getElementById('train-class-modal');
-            if (oldModal) oldModal.remove();
-            const modal = document.createElement('div');
-            modal.id = 'train-class-modal';
-            modal.className = 'server-modal';
-            modal.innerHTML = `
-                <div class="server-modal-content" style="max-width:520px;">
-                    <span class="server-modal-close">&times;</span>
-                    <h2 style="text-align:center;margin-bottom:24px;">Třídy vlaků nejsou dostupné</h2>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            setTimeout(() => { modal.classList.add('active'); }, 10);
-            modal.querySelector('.server-modal-close').onclick = () => {
-                modal.classList.remove('active');
-                setTimeout(() => modal.remove(), 300);
-            };
-        });
-}
-
-// Upravená funkce pro výběr vlaků podle třídy
-function showTrainsModal(server, selectedClass) {
+// Funkce showTrainsModal(server) zůstává, ale bez parametru selectedClass a bez filtrace podle třídy.
+function showTrainsModal(server) {
     // Pokud modal už existuje, smažeme ho
     let oldModal = document.getElementById('trains-modal');
     if (oldModal) oldModal.remove();
@@ -562,7 +472,6 @@ function showTrainsModal(server, selectedClass) {
     updateLocalTime();
     const localTimeInterval = setInterval(updateLocalTime, 5000);
 
-    // Vyčistit interval při zavření modalu
     modal.addEventListener('transitionend', () => {
         if (!modal.classList.contains('active') && localTimeInterval) {
             clearInterval(localTimeInterval);
@@ -583,11 +492,7 @@ function showTrainsModal(server, selectedClass) {
 
             function renderTrains(filter = '') {
                 let filtered = trains;
-                // Filtrovat podle třídy
-                if (selectedClass) {
-                    filtered = filtered.filter(train => getTrainClass(train) === selectedClass);
-                }
-                // Filtrovat podle vyhledávání
+                // Filtrovat pouze podle vyhledávání
                 if (filter) {
                     filtered = filtered.filter(train => train.TrainNoLocal && train.TrainNoLocal.toString().includes(filter.trim()));
                 }
@@ -597,7 +502,6 @@ function showTrainsModal(server, selectedClass) {
                 }
                 list.innerHTML = '<div class="train-bubbles">';
                 filtered.forEach(train => {
-                    // ...bublinka render viz předchozí styl...
                     const trainImg = getVehicleImage(train.Vehicles);
                     const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
                     const statusIcon = isPlayer
