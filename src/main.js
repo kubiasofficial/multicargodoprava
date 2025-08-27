@@ -1,40 +1,48 @@
-// Firebase inicializace
-const firebaseConfig = {
-    apiKey: "ATasYBexZoBfDYNqIu2r5RM9v8sNV6cV1dJU",
-    authDomain: "multicargodoprava-fe1d5.firebaseapp.com",
-    databaseURL: "https://multicargodoprava-fe1d5-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "multicargodoprava-fe1d5",
-    storageBucket: "multicargodoprava-fe1d5.appspot.com",
-    messagingSenderId: "353118042486",
-    appId: "1:353118042486:web:abdf8ba27613d27ddde257"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+// Firebase initialisation with modular SDK v9+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-// Firebase Authentication
-if (!firebase.auth) {
-    alert('Chybí Firebase Auth SDK! Přidejte <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> do index.html.');
+// Firebase Config provided by the environment
+const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+// Initialize Firebase App
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+// Authentication with a custom token
+async function authenticateWithToken() {
+    try {
+        if (typeof __initial_auth_token !== 'undefined') {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+        console.log('Firebase Authentication successful.');
+    } catch (error) {
+        console.error('Firebase Authentication failed:', error);
+    }
 }
-const auth = firebase.auth();
 
-// DOM elementy
+// Global variables for DOM elements
 const pageTitle = document.querySelector('.page-title');
 const pageContent = document.getElementById('page-content');
 const navBtns = document.querySelectorAll('.nav-btn');
 
 /**
- * Dynamicky generuje HTML pro stránku s přehledem a vytváří real-time listener.
- * Tato funkce se volá pouze JEDNOU při načtení stránky a poté se automaticky aktualizuje.
+ * Dynamically generates HTML for the overview page and creates a real-time listener for the user table.
+ * This function is called only ONCE when the page is loaded and then automatically updates.
  */
 function initializeEmployeesTable() {
     const tableContainerId = 'employees-table-container';
     const tableId = 'employees-table';
 
-    // Vytvoří HTML strukturu pro tabulku
+    // Create the HTML structure for the table
     const tableHtml = `
         <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-        <div id="${tableContainerId}" class="employee-table-container">
-            <table id="${tableId}" class="employee-table">
+        <div id="${tableContainerId}">
+            <table id="${tableId}">
                 <thead>
                     <tr><th>Avatar</th><th>Jméno</th></tr>
                 </thead>
@@ -43,28 +51,26 @@ function initializeEmployeesTable() {
         </div>
     `;
 
-    // Změní obsah stránky "Přehled"
+    // Change the content of the "Přehled" page
     if (pageContent) {
         pageContent.innerHTML = tableHtml;
     }
 
-    // Získání elementu tabulky pro aktualizace
+    // Get the table element for updates
     const tableBody = document.querySelector(`#${tableId} tbody`);
     if (!tableBody) {
-        console.error('Element tabulky pro zaměstnance nebyl nalezen.');
+        console.error('Employee table element not found.');
         return;
     }
 
-    // Naslouchá změnám v databázi v reálném čase
-    db.ref('users').on('value', snapshot => {
+    // Listen for changes in the database in real-time
+    onValue(ref(db, 'users'), (snapshot) => {
         const users = snapshot.val() || {};
         const userList = Object.values(users);
-        tableBody.innerHTML = ''; // Vyčistí tabulku před novým vykreslením
+        tableBody.innerHTML = ''; // Clear the table before re-rendering
 
         if (userList.length > 0) {
-            userList.sort((a, b) => {
-                return (b.working === true) - (a.working === true);
-            });
+            userList.sort((a, b) => (b.working === true) - (a.working === true));
 
             userList.forEach(user => {
                 const tr = document.createElement('tr');
@@ -88,7 +94,7 @@ function initializeEmployeesTable() {
     });
 }
 
-// SPA navigation (nyní jen přepíná obsah a pozadí)
+// SPA navigation (now just switches content and background)
 function setPage(page) {
     const background = document.getElementById('background');
     // Fade out
@@ -114,7 +120,7 @@ function setPage(page) {
             case 'prehled':
                 pageTitle.textContent = 'Přehled';
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                initializeEmployeesTable(); // Teď se volá pouze pro nastavení HTML a listeneru
+                initializeEmployeesTable();
                 break;
             default:
                 pageTitle.textContent = 'Přehled';
@@ -135,7 +141,9 @@ navBtns.forEach(btn => {
 });
 
 // Discord OAuth2 login logic
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    await authenticateWithToken(); // Ensure authentication is done before any DB operations
+    
     const modal = document.getElementById('discord-modal');
     const hash = window.location.hash;
     let accessToken = null;
@@ -166,7 +174,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function showDiscordProfile(user) {
     let container = document.getElementById('discord-profile-container');
     if (!container) {
-        console.error('Chyba: Element pro profil nebyl nalezen.');
+        console.error('Error: Profile element not found.');
         return;
     }
     let profileDiv = document.getElementById('discord-profile');
@@ -192,7 +200,7 @@ function showDiscordProfile(user) {
     }
 
     if (user && user.id && user.username) {
-        db.ref('users/' + user.id).update({
+        update(ref(db, 'users/' + user.id), {
             username: user.username,
             avatar: user.avatar,
             id: user.id
@@ -213,7 +221,7 @@ function showDiscordProfile(user) {
             if (arrivalBtn) {
                 arrivalBtn.onclick = () => {
                     document.getElementById('work-modal').classList.remove('active');
-                    db.ref('users/' + user.id).update({ working: true });
+                    update(ref(db, 'users/' + user.id), { working: true });
                     const now = new Date();
                     const timeString = now.toLocaleString('cs-CZ');
                     fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
@@ -242,7 +250,7 @@ function showDiscordProfile(user) {
                 leaveBtn.onclick = () => {
                     console.log('Kliknutí na Odchod!');
                     document.getElementById('work-modal').classList.remove('active');
-                    db.ref('users/' + user.id).update({ working: false });
+                    update(ref(db, 'users/' + user.id), { working: false });
                     const now = new Date();
                     const timeString = now.toLocaleString('cs-CZ');
                     fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
@@ -272,5 +280,5 @@ function showDiscordProfile(user) {
     }
 }
 
-// Spustit navigaci na výchozí stránku při načtení
+// Run navigation to the default page on load
 setPage('prehled');
