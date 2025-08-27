@@ -158,6 +158,9 @@ function initializeEmployeesTable() {
         return;
     }
 
+    // Získání elementu tabulky pro aktivitu
+    const activityBody = document.querySelector('#activity-table tbody');
+
     // Funkce pro načtení zaměstnanců
     function updateTable() {
         db.ref('users').once('value', snapshot => {
@@ -190,14 +193,41 @@ function initializeEmployeesTable() {
         });
     }
 
+    // Funkce pro načtení aktivity
+    function updateActivityTable() {
+        db.ref('activity').once('value', snapshot => {
+            const activities = snapshot.val() || {};
+            activityBody.innerHTML = '';
+            const activityList = Object.values(activities);
+            if (activityList.length > 0) {
+                activityList.forEach(act => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${act.username}</td>
+                        <td>${act.trainNo} ${act.trainName ? '(' + act.trainName + ')' : ''}</td>
+                    `;
+                    activityBody.appendChild(tr);
+                });
+            } else {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádná aktivita zatím není.</td>`;
+                activityBody.appendChild(tr);
+            }
+        });
+    }
+
     // První načtení
     updateTable();
+    updateActivityTable();
 
     // Zruší předchozí interval pokud existuje
     if (employeesInterval) clearInterval(employeesInterval);
 
     // Aktualizace každých 30 sekund
-    employeesInterval = setInterval(updateTable, 30000);
+    employeesInterval = setInterval(() => {
+        updateTable();
+        updateActivityTable();
+    }, 30000);
 }
 
 // SPA navigation (nyní jen přepíná obsah a pozadí)
@@ -414,7 +444,181 @@ function showDiscordProfile(user) {
     }
 }
 
-// Funkce showTrainsModal(server) zůstává, ale bez parametru selectedClass a bez filtrace podle třídy.
+// Pomocná funkce pro odeslání zprávy na Discord webhook
+function sendDiscordWebhook(content) {
+    fetch("https://discordapp.com/api/webhooks/1410402512787472527/aIXjeKX6Oqb9el4KLDPDspXEmlqdkTrwwSUsXSMJgcbmHqKfqSveJo05FNmc18WwoevJ", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+    });
+}
+
+// Uložení aktivity do Firebase
+function saveActivity(user, train) {
+    db.ref('activity/' + user.id).set({
+        username: user.username,
+        trainNo: train.TrainNoLocal,
+        trainName: train.TrainName || "",
+        time: Date.now()
+    });
+}
+
+// Odstranění aktivity z Firebase
+function removeActivity(user) {
+    db.ref('activity/' + user.id).remove();
+}
+
+// Pomocná funkce pro načtení jízdního řádu vlaku
+function fetchTrainTimetable(serverCode, trainNo) {
+    return fetch(`https://api1.aws.simrail.eu:8082/api/getAllTimetables?serverCode=${serverCode}&train=${trainNo}`)
+        .then(res => res.json())
+        .catch(() => []);
+}
+
+// Pomocná funkce pro načtení pozice vlaku
+function fetchTrainPosition(serverCode, trainId) {
+    return fetch(`https://panel.simrail.eu:8084/train-positions-open?serverCode=${serverCode}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data || !data.data) return null;
+            return data.data.find(pos => pos.id === trainId) || null;
+        })
+        .catch(() => null);
+}
+
+// Zobrazení detailního modalu vlaku včetně jízdního řádu a pozice
+async function showTrainDetailModal(user, train) {
+    // Pokud modal už existuje, smažeme ho
+    let oldModal = document.getElementById('train-detail-modal');
+    if (oldModal) oldModal.remove();
+
+    // Načtení jízdního řádu a pozice
+    let timetable = [];
+    let trainPosition = null;
+    try {
+        timetable = await fetchTrainTimetable(train.ServerCode, train.TrainNoLocal);
+        trainPosition = await fetchTrainPosition(train.ServerCode, train.id);
+    } catch {}
+
+    // Vytvoření modalu
+    const modal = document.createElement('div');
+    modal.id = 'train-detail-modal';
+    modal.className = 'server-modal';
+
+    // Jízdní řád HTML
+    let timetableHtml = '';
+    if (Array.isArray(timetable) && timetable.length > 0 && timetable[0].timetable) {
+        timetableHtml = `
+            <div style="margin-top:18px;">
+                <div style="font-weight:bold;color:#fff;margin-bottom:8px;">Jízdní řád:</div>
+                <table style="width:100%;background:#23272a;border-radius:8px;">
+                    <thead>
+                        <tr style="color:#ffe066;">
+                            <th style="padding:6px;">Stanice</th>
+                            <th style="padding:6px;">Příjezd</th>
+                            <th style="padding:6px;">Odjezd</th>
+                            <th style="padding:6px;">Typ</th>
+                            <th style="padding:6px;">Kolej</th>
+                            <th style="padding:6px;">Nástupiště</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${timetable[0].timetable.map(stop => `
+                            <tr style="color:#fff;">
+                                <td style="padding:6px;">${stop.nameForPerson}</td>
+                                <td style="padding:6px;">${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : '-'}</td>
+                                <td style="padding:6px;">${stop.departureTime ? stop.departureTime.split(' ')[1] : '-'}</td>
+                                <td style="padding:6px;">${stop.stopType === 'CommercialStop' ? 'Osobní' : (stop.stopType === 'NoncommercialStop' ? 'Technická' : 'Průjezd')}</td>
+                                <td style="padding:6px;">${stop.track || '-'}</td>
+                                <td style="padding:6px;">${stop.platform || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        timetableHtml = `<div style="margin-top:18px;color:#aaa;">Jízdní řád není dostupný.</div>`;
+    }
+
+    // Pozice vlaku HTML
+    let positionHtml = '';
+    if (trainPosition) {
+        positionHtml = `
+            <div style="margin-top:18px;">
+                <span style="font-weight:bold;color:#fff;">Aktuální pozice:</span>
+                <span style="color:#ffe066;">${trainPosition.Latitude.toFixed(5)}, ${trainPosition.Longitude.toFixed(5)}</span>
+                <span style="color:#43b581;margin-left:12px;">Rychlost: ${trainPosition.Velocity} km/h</span>
+            </div>
+        `;
+    }
+
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:620px;min-width:340px;position:relative;">
+            <span class="server-modal-close">&times;</span>
+            <span id="train-modal-minimize" style="position:absolute;top:18px;left:24px;font-size:2.2rem;cursor:pointer;color:#fff;">&#8211;</span>
+            <div id="train-modal-body">
+                <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
+                    <img src="${getVehicleImage(train.Vehicles)}" alt="Vlak" style="width:72px;height:72px;border-radius:50%;background:#222;">
+                    <div>
+                        <div style="font-size:1.3em;font-weight:bold;color:#ffe066;">${train.TrainNoLocal}</div>
+                        <div style="font-size:1.1em;font-weight:bold;color:#fff;">${train.TrainName || ""}</div>
+                        <div style="font-size:1em;color:#43b581;">${train.StartStation} → ${train.EndStation}</div>
+                    </div>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <span style="font-weight:bold;color:#fff;">Stav:</span>
+                    <span style="color:#43b581;">${train.Type === 'player' ? 'Převzatý hráčem' : 'AI'}</span>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <span style="font-weight:bold;color:#fff;">Vozidla:</span>
+                    <span style="color:#aaa;">${train.Vehicles ? train.Vehicles.join(", ") : ""}</span>
+                </div>
+                <div style="margin-bottom:12px;">
+                    <span style="font-weight:bold;color:#fff;">Trasa:</span>
+                    <span style="color:#aaa;">${train.StartStation} → ${train.EndStation}</span>
+                </div>
+                ${positionHtml}
+                ${timetableHtml}
+                <div style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
+                    <button id="end-ride-btn" class="profile-btn profile-btn-red">Ukončit jízdu</button>
+                </div>
+            </div>
+            <div id="train-modal-minimized" style="display:none;text-align:center;padding:24px 0;">
+                <button id="train-modal-maximize" class="profile-btn profile-btn-green">Zvětšit okno vlaku</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    // Zavření modalu
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Minimalizace
+    document.getElementById('train-modal-minimize').onclick = () => {
+        document.getElementById('train-modal-body').style.display = 'none';
+        document.getElementById('train-modal-minimized').style.display = 'block';
+    };
+    document.getElementById('train-modal-maximize').onclick = () => {
+        document.getElementById('train-modal-body').style.display = 'block';
+        document.getElementById('train-modal-minimized').style.display = 'none';
+    };
+
+    // Ukončení jízdy
+    document.getElementById('end-ride-btn').onclick = () => {
+        sendDiscordWebhook(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
+        removeActivity(user);
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+}
+
+// Změna: kliknutí na vlakovou kartu otevře modal s "Převzít" a "Zavřít"
 function showTrainsModal(server) {
     // Pokud modal už existuje, smažeme ho
     let oldModal = document.getElementById('trains-modal');
@@ -509,7 +713,7 @@ function showTrainsModal(server) {
                         : '<svg width="22" height="22" fill="#f04747" style="vertical-align:middle;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
                     const route = `${train.StartStation} → ${train.EndStation}`;
                     list.innerHTML += `
-                        <div class="train-bubble train-bubble-modern">
+                        <div class="train-bubble train-bubble-modern" style="cursor:pointer;" data-train-no="${train.TrainNoLocal}">
                             <div class="train-bubble-imgbox-modern">
                                 <img src="${trainImg}" alt="Vlak" class="train-bubble-img-modern">
                                 <span class="train-bubble-status-modern">${statusIcon}</span>
@@ -522,6 +726,75 @@ function showTrainsModal(server) {
                     `;
                 });
                 list.innerHTML += '</div>';
+
+                // Event handler pro kliknutí na vlakovou kartu
+                setTimeout(() => {
+                    document.querySelectorAll('.train-bubble-modern').forEach(card => {
+                        card.onclick = () => {
+                            const trainNo = card.getAttribute('data-train-no');
+                            const train = trains.find(t => t.TrainNoLocal == trainNo);
+                            if (!train) return;
+
+                            // Modal pro převzetí vlaku
+                            let oldModal = document.getElementById('take-train-modal');
+                            if (oldModal) oldModal.remove();
+                            const modal = document.createElement('div');
+                            modal.id = 'take-train-modal';
+                            modal.className = 'server-modal';
+                            modal.innerHTML = `
+                                <div class="server-modal-content" style="max-width:400px;">
+                                    <span class="server-modal-close">&times;</span>
+                                    <h2 style="text-align:center;margin-bottom:18px;">Vlak ${train.TrainNoLocal}</h2>
+                                    <div style="text-align:center;margin-bottom:18px;">
+                                        <span style="font-size:1.1em;color:#fff;">${train.StartStation} → ${train.EndStation}</span>
+                                    </div>
+                                    <div style="display:flex;gap:16px;justify-content:center;">
+                                        <button id="take-train-btn" class="profile-btn profile-btn-green">Převzít</button>
+                                        <button id="close-train-btn" class="profile-btn profile-btn-red">Zavřít</button>
+                                    </div>
+                                </div>
+                            `;
+                            document.body.appendChild(modal);
+
+                            setTimeout(() => { modal.classList.add('active'); }, 10);
+
+                            modal.querySelector('.server-modal-close').onclick = () => {
+                                modal.classList.remove('active');
+                                setTimeout(() => modal.remove(), 300);
+                            };
+                            document.getElementById('close-train-btn').onclick = () => {
+                                modal.classList.remove('active');
+                                setTimeout(() => modal.remove(), 300);
+                            };
+
+                            document.getElementById('take-train-btn').onclick = () => {
+                                // Získání uživatele z Firebase
+                                const user = firebase.auth().currentUser;
+                                if (!user) {
+                                    alert("Musíš být přihlášený přes Discord!");
+                                    return;
+                                }
+                                // Získání dat uživatele z DB
+                                db.ref('users/' + user.uid).once('value').then(snap => {
+                                    const userData = snap.val();
+                                    if (!userData) {
+                                        alert("Chyba uživatele.");
+                                        return;
+                                    }
+                                    // Odeslat webhook
+                                    sendDiscordWebhook(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
+                                    // Uložit aktivitu
+                                    saveActivity(userData, train);
+                                    // Zobrazit detailní modal vlaku
+                                    showTrainDetailModal(userData, train);
+                                    // Zavřít modal převzetí
+                                    modal.classList.remove('active');
+                                    setTimeout(() => modal.remove(), 300);
+                                });
+                            };
+                        };
+                    });
+                }, 50);
             }
 
             renderTrains();
@@ -535,91 +808,123 @@ function showTrainsModal(server) {
         });
 }
 
-// Funkce pro zobrazení serverového modalu a načtení serverů
-function showServerModal() {
-    // Pokud modal už existuje, smažeme ho
-    let oldModal = document.getElementById('server-modal');
-    if (oldModal) oldModal.remove();
+// Úprava: tabulka Aktivita na stránce Přehled načítá data z /activity
+function initializeEmployeesTable() {
+    const tableContainerId = 'employees-table-container';
+    const tableId = 'employees-table';
+    const activityContainerId = 'activity-table-container';
+    const activityTableId = 'activity-table';
 
-    // Vytvoření nového modalu
-    const modal = document.createElement('div');
-    modal.id = 'server-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Vyber server</h2>
-            <div id="servers-list" class="servers-list">
-                <div class="servers-loading">Načítám servery...</div>
+    // HTML pro tabulku zaměstnanců a aktivitu vedle sebe
+    const tableHtml = `
+        <div class="tables-flex-container">
+            <div id="${tableContainerId}" class="employee-table-container">
+                <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
+                <table id="${tableId}" class="employee-table">
+                    <thead>
+                        <tr><th>Avatar</th><th>Jméno</th><th>Role</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="${activityContainerId}" class="activity-table-container">
+                <h2 style="color:#fff;text-align:center;">Aktivita</h2>
+                <table id="${activityTableId}" class="activity-table">
+                    <thead>
+                        <tr><th>Zaměstnanec</th><th>Práce</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="2" style="text-align:center;">Žádná aktivita zatím není.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     `;
-    document.body.appendChild(modal);
 
-    setTimeout(() => { modal.classList.add('active'); }, 10);
+    // Změní obsah stránky "Přehled"
+    if (pageContent) {
+        pageContent.innerHTML = tableHtml;
+    }
 
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
+    // Získání elementu tabulky pro aktualizace
+    const tableBody = document.querySelector(`#${tableId} tbody`);
+    if (!tableBody) {
+        console.error('Element tabulky pro zaměstnance nebyl nalezen.');
+        return;
+    }
 
-    // Načtení serverů z API
-    fetch('https://panel.simrail.eu:8084/servers-open')
-        .then(res => res.json())
-        .then(data => {
-            const servers = data.data || [];
-            const list = document.getElementById('servers-list');
-            if (servers.length === 0) {
-                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
-                return;
-            }
-            list.innerHTML = '';
-            servers.forEach(server => {
-                // Oprava detekce online stavu serveru:
-                // Správný klíč je pravděpodobně server.IsActive (ne server.Online)
-                const status = server.IsActive ? 'Online' : 'Offline';
-                const statusColor = server.IsActive ? '#43b581' : '#f04747';
+    // Získání elementu tabulky pro aktivitu
+    const activityBody = document.querySelector('#activity-table tbody');
 
-                // Počet hráčů
-                let playersHtml = '';
-                if (typeof server.PlayerCount !== 'undefined') {
-                    playersHtml = `
-                        <span class="server-players">
-                            <svg width="20" height="20" style="vertical-align:middle;margin-right:4px;" fill="#43b581" viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
-                            ${server.PlayerCount} hráčů
-                        </span>
+    // Funkce pro načtení zaměstnanců
+    function updateTable() {
+        db.ref('users').once('value', snapshot => {
+            const users = snapshot.val() || {};
+            // Filtrujeme pouze zaměstnance ve službě
+            const userList = Object.values(users).filter(u => u.working === true);
+            tableBody.innerHTML = ''; // Vyčistí tabulku před novým vykreslením
+
+            if (userList.length > 0) {
+                userList.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='${user.username} avatar' style='width:32px;height:32px;border-radius:50%;background:#222;'>
+                        </td>
+                        <td>
+                            ${user.username} <span style="font-size:0.8em;color:#43b581;">🟢 Ve službě</span>
+                        </td>
+                        <td>
+                            ${user.role ? user.role : ''}
+                        </td>
                     `;
-                }
-
-                list.innerHTML += `
-                    <div class="server-card" style="animation: fadeInUp 0.5s;" data-server-id="${server.id}">
-                        <div class="server-header">
-                            <span class="server-name">${server.ServerName}</span>
-                            <span class="server-region">${server.ServerRegion}</span>
-                        </div>
-                        <div class="server-info">
-                            <span class="server-status" style="color:${statusColor};font-weight:bold;">
-                                ${status}
-                            </span>
-                            ${playersHtml}
-                        </div>
-                    </div>
-                `;
-            });
-            document.querySelectorAll('.server-card').forEach(card => {
-                card.onclick = () => {
-                    const serverId = card.getAttribute('data-server-id');
-                    const server = servers.find(s => s.id === serverId);
-                    if (server) {
-                        document.getElementById('server-modal').remove();
-                        showTrainsModal(server);
-                    }
-                };
-            });
-        })
-        .catch(() => {
-            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+                    tableBody.appendChild(tr);
+                });
+            } else {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan='3' style='text-align:center;'>Žádný zaměstnanec není ve službě.</td>`;
+                tableBody.appendChild(tr);
+            }
         });
+    }
+
+    // Funkce pro načtení aktivity
+    function updateActivityTable() {
+        db.ref('activity').once('value', snapshot => {
+            const activities = snapshot.val() || {};
+            activityBody.innerHTML = '';
+            const activityList = Object.values(activities);
+            if (activityList.length > 0) {
+                activityList.forEach(act => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${act.username}</td>
+                        <td>${act.trainNo} ${act.trainName ? '(' + act.trainName + ')' : ''}</td>
+                    `;
+                    activityBody.appendChild(tr);
+                });
+            } else {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádná aktivita zatím není.</td>`;
+                activityBody.appendChild(tr);
+            }
+        });
+    }
+
+    // První načtení
+    updateTable();
+    updateActivityTable();
+
+    // Zruší předchozí interval pokud existuje
+    if (employeesInterval) clearInterval(employeesInterval);
+
+    // Aktualizace každých 30 sekund
+    employeesInterval = setInterval(() => {
+        updateTable();
+        updateActivityTable();
+    }, 30000);
 }
 
 // Spustit navigaci na výchozí stránku při načtení
