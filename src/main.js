@@ -46,8 +46,19 @@ function setPage(page) {
         break;
       case 'prehled':
         pageTitle.textContent = 'Přehled';
-        pageContent.innerHTML = '';
+        pageContent.innerHTML = `
+          <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
+          <div id="employees-table-container" style="margin:0 auto;max-width:600px;background:rgba(0,0,0,0.5);border-radius:8px;padding:16px;">
+            <table id="employees-table" style="width:100%;color:#fff;text-align:left;">
+              <thead>
+                <tr><th>Avatar</th><th>Jméno</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        `;
         background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
+        renderEmployeesTable();
         break;
       default:
         pageTitle.textContent = 'Přehled';
@@ -131,11 +142,14 @@ function showDiscordProfile(user) {
   }
 
   // Zápis uživatele do Firebase Realtime Database
-  db.ref('users/' + user.id).set({
-    username: user.username,
-    avatar: user.avatar,
-    id: user.id
-  });
+  // Zápis uživatele do Firebase Realtime Database (pouze pokud existuje)
+  if (user && user.id && user.username) {
+    db.ref('users/' + user.id).update({
+      username: user.username,
+      avatar: user.avatar,
+      id: user.id
+    });
+  }
 
   // Navázání event handleru na profile-clickable až po zápisu do Firebase
   const clickable = document.getElementById('profile-clickable');
@@ -154,6 +168,8 @@ function showDiscordProfile(user) {
       if (arrivalBtn) {
         arrivalBtn.onclick = () => {
           document.getElementById('work-modal').classList.remove('active');
+          // Označení uživatele jako "ve službě"
+          db.ref('users/' + user.id).update({ working: true });
           // Odeslání zprávy na Discord webhook
           const now = new Date();
           const timeString = now.toLocaleString('cs-CZ');
@@ -183,6 +199,8 @@ function showDiscordProfile(user) {
         leaveBtn.onclick = () => {
           console.log('Kliknutí na Odchod!');
           document.getElementById('work-modal').classList.remove('active');
+          // Označení uživatele jako "mimo službu"
+          db.ref('users/' + user.id).update({ working: false });
           // Odeslání zprávy na Discord webhook
           const now = new Date();
           const timeString = now.toLocaleString('cs-CZ');
@@ -207,6 +225,30 @@ function showDiscordProfile(user) {
           });
         };
       }
+// Funkce pro vykreslení tabulky zaměstnanců na stránce Přehled
+function renderEmployeesTable() {
+  const tableBody = document.querySelector('#employees-table tbody');
+  if (!tableBody) return;
+  // Poslouchat změny v /users kde working==true
+  db.ref('users').orderByChild('working').equalTo(true).on('value', snapshot => {
+    const users = snapshot.val() || {};
+    tableBody.innerHTML = '';
+    Object.values(users).forEach(user => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' style='width:32px;height:32px;border-radius:50%;background:#222;'></td>
+        <td>${user.username}</td>
+      `;
+      tableBody.appendChild(tr);
+    });
+    // Pokud není nikdo ve službě
+    if (Object.keys(users).length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádný zaměstnanec není ve službě.</td>`;
+      tableBody.appendChild(tr);
+    }
+  });
+}
       console.log('Modal by měl být aktivní:', document.getElementById('work-modal').classList);
     };
   } else {
