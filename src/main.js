@@ -486,55 +486,89 @@ function fetchTrainPosition(serverCode, trainId) {
         .catch(() => null);
 }
 
-// Zobrazení detailního modalu vlaku včetně jízdního řádu a pozice
+// Pomocná funkce pro zjištění aktuální a následující stanice + spočítané zpoždění
+function getCurrentAndNextStop(timetable) {
+    if (!Array.isArray(timetable) || timetable.length === 0) return [];
+    const now = new Date();
+    let currentIdx = -1;
+    for (let i = 0; i < timetable.length; i++) {
+        const stop = timetable[i];
+        const timeStr = stop.departureTime || stop.arrivalTime;
+        if (timeStr) {
+            const time = new Date(timeStr);
+            if (time > now) {
+                currentIdx = i - 1;
+                break;
+            }
+        }
+    }
+    if (currentIdx < 0) currentIdx = 0;
+    const stops = [];
+    if (timetable[currentIdx]) stops.push(timetable[currentIdx]);
+    if (timetable[currentIdx + 1]) stops.push(timetable[currentIdx + 1]);
+    return stops;
+}
+
+// Pomocná funkce pro výpočet zpoždění podle jízdního řádu a aktuálního času
+function calculateDelay(stop) {
+    // Použij odjezd, pokud existuje, jinak příjezd
+    const timeStr = stop.departureTime || stop.arrivalTime;
+    if (!timeStr) return 0;
+    const planned = new Date(timeStr);
+    const now = new Date();
+    const diffMs = now - planned;
+    const diffMin = Math.floor(diffMs / 60000);
+    return diffMin > 0 ? diffMin : 0;
+}
+
+// Zobrazení detailního modalu vlaku včetně aktuální a následující stanice + spočítané zpoždění
 async function showTrainDetailModal(user, train) {
     // Pokud modal už existuje, smažeme ho
     let oldModal = document.getElementById('train-detail-modal');
     if (oldModal) oldModal.remove();
 
-    // Načtení jízdního řádu a pozice
+    // Načtení jízdního řádu
     let timetable = [];
-    let trainPosition = null;
     try {
-        timetable = await fetchTrainTimetable(train.ServerCode, train.TrainNoLocal);
-        trainPosition = await fetchTrainPosition(train.ServerCode, train.id);
+        const timetableData = await fetchTrainTimetable(train.ServerCode, train.TrainNoLocal);
+        if (Array.isArray(timetableData) && timetableData.length > 0 && timetableData[0].timetable) {
+            timetable = timetableData[0].timetable;
+        }
     } catch {}
 
-    // Vytvoření modalu
-    const modal = document.createElement('div');
-    modal.id = 'train-detail-modal';
-    modal.className = 'server-modal';
+    // Získání aktuální a následující stanice
+    const stops = getCurrentAndNextStop(timetable);
 
-    // Jízdní řád HTML
+    // Jízdní řád HTML (jen aktuální + následující stanice, design webu)
     let timetableHtml = '';
-    if (Array.isArray(timetable) && timetable.length > 0 && timetable[0].timetable) {
+    if (stops.length > 0) {
         timetableHtml = `
             <div style="margin-top:18px;">
                 <div style="font-weight:bold;color:#fff;margin-bottom:8px;">Jízdní řád:</div>
-                <table style="width:100%;background:#23272a;border-radius:8px;">
-                    <thead>
-                        <tr style="color:#ffe066;">
-                            <th style="padding:6px;">Stanice</th>
-                            <th style="padding:6px;">Příjezd</th>
-                            <th style="padding:6px;">Odjezd</th>
-                            <th style="padding:6px;">Typ</th>
-                            <th style="padding:6px;">Kolej</th>
-                            <th style="padding:6px;">Nástupiště</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${timetable[0].timetable.map(stop => `
-                            <tr style="color:#fff;">
-                                <td style="padding:6px;">${stop.nameForPerson}</td>
-                                <td style="padding:6px;">${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : '-'}</td>
-                                <td style="padding:6px;">${stop.departureTime ? stop.departureTime.split(' ')[1] : '-'}</td>
-                                <td style="padding:6px;">${stop.stopType === 'CommercialStop' ? 'Osobní' : (stop.stopType === 'NoncommercialStop' ? 'Technická' : 'Průjezd')}</td>
-                                <td style="padding:6px;">${stop.track || '-'}</td>
-                                <td style="padding:6px;">${stop.platform || '-'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    ${stops.map((stop, idx) => {
+                        // Spočítané zpoždění
+                        const delay = calculateDelay(stop);
+                        const delayHtml = delay > 0
+                            ? `<span style="color:#f04747;font-weight:bold;">+${delay} min</span>`
+                            : '';
+                        return `
+                            <div style="background:rgba(44,47,51,0.85);border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.18);padding:14px 18px;display:flex;flex-direction:column;">
+                                <span style="font-size:1.18em;font-weight:bold;color:${idx === 0 ? '#43b581' : '#ffe066'};">
+                                    ${idx === 0 ? 'Aktuální stanice:' : 'Následující stanice:'} ${stop.nameForPerson}
+                                </span>
+                                <span style="color:#fff;">
+                                    ${stop.arrivalTime ? `Příjezd: <b>${stop.arrivalTime.split(' ')[1]}</b>` : ''}
+                                    ${stop.departureTime ? `Odjezd: <b>${stop.departureTime.split(' ')[1]}</b>` : ''}
+                                    ${delayHtml ? ` ${delayHtml}` : ''}
+                                </span>
+                                <span style="color:#aaa;font-size:0.98em;">
+                                    ${stop.platform ? `Nástupiště: ${stop.platform}` : ''} ${stop.track ? `Kolej: ${stop.track}` : ''}
+                                </span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
             </div>
         `;
     } else {
@@ -578,7 +612,6 @@ async function showTrainDetailModal(user, train) {
                     <span style="font-weight:bold;color:#fff;">Trasa:</span>
                     <span style="color:#aaa;">${train.StartStation} → ${train.EndStation}</span>
                 </div>
-                ${positionHtml}
                 ${timetableHtml}
                 <div style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
                     <button id="end-ride-btn" class="profile-btn profile-btn-red">Ukončit jízdu</button>
