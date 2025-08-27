@@ -550,3 +550,30 @@ body {
   font-weight: bold;
   letter-spacing: 1px;
 }
+
+.profile-btn {
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 1.08em;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.profile-btn-green {
+  background: #43b581;
+  color: #fff;
+}
+.profile-btn-green:hover {
+  background: #2ecc71;
+  transform: scale(1.05);
+}
+.profile-btn-red {
+  background: #f04747;
+  color: #fff;
+}
+.profile-btn-red:hover {
+  background: #c0392b;
+  transform: scale(1.05);
+}

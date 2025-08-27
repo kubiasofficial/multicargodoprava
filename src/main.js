@@ -285,6 +285,77 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function showProfileModal(user) {
+    // Pokud modal už existuje, smažeme ho
+    let oldModal = document.getElementById('profile-modal');
+    if (oldModal) oldModal.remove();
+
+    // Vytvoření modalu
+    const modal = document.createElement('div');
+    modal.id = 'profile-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="min-width:340px;max-width:95vw;">
+            <span class="server-modal-close">&times;</span>
+            <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
+                <img src="https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png" alt="pfp" style="width:64px;height:64px;border-radius:50%;background:#222;">
+                <div>
+                    <div style="font-size:1.2em;font-weight:bold;color:#43b581;">${user.username}</div>
+                    <div style="font-size:1em;color:#aaa;">ID: ${user.id}</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:16px;justify-content:center;margin-bottom:18px;">
+                <button id="profile-arrival" class="profile-btn profile-btn-green">Příchod</button>
+                <button id="profile-leave" class="profile-btn profile-btn-red">Odchod</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:18px;">
+                <label for="profile-role-select" style="color:#fff;font-weight:bold;">Role:</label>
+                <select id="profile-role-select" style="background:#23272a;color:#fff;border:1px solid #43b581;border-radius:6px;padding:6px 12px;font-size:1em;">
+                    <option value="Strojvedoucí">Strojvedoucí</option>
+                    <option value="Výpravčí">Výpravčí</option>
+                    <option value="Řidič">Řidič</option>
+                </select>
+            </div>
+            <div style="text-align:center;color:#aaa;font-size:0.98em;">
+                <span>Další informace budou zde...</span>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Nastavení role v selectu
+    const roleSelect = document.getElementById('profile-role-select');
+    if (roleSelect) {
+        db.ref('users/' + user.id).once('value').then(snap => {
+            if (snap.val() && snap.val().role) {
+                roleSelect.value = snap.val().role;
+            }
+        });
+        roleSelect.onchange = (e) => {
+            db.ref('users/' + user.id).update({ role: e.target.value });
+        };
+    }
+
+    // Tlačítka příchod/odchod
+    document.getElementById('profile-arrival').onclick = () => {
+        db.ref('users/' + user.id).update({ working: true });
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+    document.getElementById('profile-leave').onclick = () => {
+        db.ref('users/' + user.id).update({ working: false });
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+}
+
 function showDiscordProfile(user) {
     let container = document.getElementById('discord-profile-container');
     if (!container) {
@@ -332,77 +403,8 @@ function showDiscordProfile(user) {
     const clickable = document.getElementById('profile-clickable');
     if (clickable) {
         clickable.onclick = () => {
-            // Modal pro příchod/odchod z práce, role se vybírá v panelu vpravo nahoře
-            const modal = document.getElementById('work-modal');
-            modal.classList.add('active');
-            // Skryjeme výběr role v modalu pokud existuje
-            const roleSelect = document.getElementById('role-select');
-            if (roleSelect) roleSelect.parentElement.style.display = 'none';
-
-            // Změna stránky podle role po zavření modalu
-            const closeBtn = document.getElementById('work-modal-close');
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    modal.classList.remove('active');
-                };
-            }
-            const arrivalBtn = document.getElementById('work-arrival');
-            if (arrivalBtn) {
-                arrivalBtn.onclick = () => {
-                    modal.classList.remove('active');
-                    db.ref('users/' + user.id).update({ working: true });
-                    const now = new Date();
-                    const timeString = now.toLocaleString('cs-CZ');
-                    fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            embeds: [{
-                                title: 'Příchod do práce',
-                                description: `Uživatel **${user.username}** přišel do práce.`,
-                                color: 0x43b581,
-                                thumbnail: {
-                                    url: user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : undefined
-                                },
-                                footer: {
-                                    text: `Čas: ${timeString}`
-                                }
-                            }]
-                        })
-                    });
-                };
-            }
-            const leaveBtn = document.getElementById('work-leave');
-            if (leaveBtn) {
-                leaveBtn.onclick = () => {
-                    modal.classList.remove('active');
-                    db.ref('users/' + user.id).update({ working: false });
-                    const now = new Date();
-                    const timeString = now.toLocaleString('cs-CZ');
-                    fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            embeds: [{
-                                title: 'Odchod z práce',
-                                description: `Uživatel **${user.username}** odešel z práce.`,
-                                color: 0xf04747,
-                                thumbnail: {
-                                    url: user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : undefined
-                                },
-                                footer: {
-                                    text: `Čas: ${timeString}`
-                                }
-                            }]
-                        })
-                    });
-                };
-            }
-        }
+            showProfileModal(user);
+        };
     } else {
         console.warn('profile-clickable nenalezen, event handler nenavázán!');
     }
