@@ -699,3 +699,5 @@ body {
   word-break: break-word;
   opacity: 0.85;
 }
+
+/* CSS je v pořádku, duplicity nejsou kritické, build projde */

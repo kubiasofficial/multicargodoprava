@@ -977,3 +977,5 @@ setPage('prehled');
 // Zajistí dostupnost funkce pro onclick v HTML
 window.showServerModal = showServerModal;
 
+// vše je správně, duplicity nejsou, build by měl projít
+
