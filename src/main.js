@@ -905,6 +905,10 @@ function showServerModal() {
             }
             list.innerHTML = '';
             servers.forEach(server => {
+                // Status online/offline podle API
+                const isOnline = server.Status === 'Online' || server.Status === 'online';
+                const statusColor = isOnline ? '#43b581' : '#f04747';
+                const statusText = isOnline ? 'Online' : 'Offline';
                 const div = document.createElement('div');
                 div.className = 'server-card';
                 div.innerHTML = `
@@ -913,15 +917,24 @@ function showServerModal() {
                         <span class="server-region">${server.ServerRegion}</span>
                     </div>
                     <div class="server-info">
-                        <span class="server-status">${server.Status}</span>
+                        <span class="server-status" style="color:${statusColor};font-weight:bold;">
+                            ${statusText}
+                        </span>
                         <span class="server-players">👥 ${server.PlayersCount || 0}</span>
                     </div>
                 `;
-                div.onclick = () => {
-                    modal.classList.remove('active');
-                    setTimeout(() => modal.remove(), 300);
-                    showTrainsModal(server);
-                };
+                // Kliknutí povoleno jen pro online servery
+                if (isOnline) {
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        showTrainsModal(server);
+                    };
+                } else {
+                    div.style.opacity = '0.6';
+                    div.style.cursor = 'not-allowed';
+                }
                 list.appendChild(div);
             });
         })
