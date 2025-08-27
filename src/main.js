@@ -134,11 +134,11 @@ function initializeEmployeesTable() {
                 <h2 style="color:#fff;text-align:center;">Aktivita</h2>
                 <table id="${activityTableId}" class="activity-table">
                     <thead>
-                        <tr><th>Čas</th><th>Uživatel</th><th>Akce</th></tr>
+                        <tr><th>Zaměstnanec</th><th>Práce</th></tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="3" style="text-align:center;">Žádná aktivita zatím není.</td>
+                            <td colspan="2" style="text-align:center;">Žádná aktivita zatím není.</td>
                         </tr>
                     </tbody>
                 </table>

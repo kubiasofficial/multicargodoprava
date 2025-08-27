@@ -343,11 +343,7 @@ body {
   border-bottom: 1px solid #333;
 }
 
-.activity-table th {
-  background: #23272a;
-  font-weight: bold;
-}
-
+/* Pokud je v tabulce jen 2 sloupce, upravíme colspan v posledním řádku */
 .activity-table tr:last-child td {
   border-bottom: none;
 }
