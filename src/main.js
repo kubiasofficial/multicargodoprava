@@ -410,118 +410,98 @@ function showDiscordProfile(user) {
     }
 }
 
-function showServerModal() {
-    // Pokud modal už existuje, smažeme ho
-    let oldModal = document.getElementById('server-modal');
-    if (oldModal) oldModal.remove();
+// Pomocná funkce pro získání unikátních tříd vlaků z dat
+function extractTrainClasses(trains) {
+    const classSet = new Set();
+    trains.forEach(train => {
+        if (train.TrainName) {
+            // Třída je první část před " - " nebo první slovo
+            const match = train.TrainName.match(/^([A-Z0-9]+)[\s\-]/);
+            if (match) classSet.add(match[1]);
+        }
+    });
+    return Array.from(classSet);
+}
 
-    // Vytvoření modalu
-    const modal = document.createElement('div');
-    modal.id = 'server-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru SimRail</h2>
-            <div id="servers-list" class="servers-list">
-                <div class="servers-loading">Načítám servery...</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
+// Pomocná funkce pro zjištění třídy vlaku podle jména
+function getTrainClass(train) {
+    if (train.TrainName) {
+        const match = train.TrainName.match(/^([A-Z0-9]+)[\s\-]/);
+        if (match) return match[1];
+    }
+    return null;
+}
 
-    // Animace zobrazení
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-
-    // Zavření modalu
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-
-    // Načtení serverů z API
-    fetch('https://panel.simrail.eu:8084/servers-open')
+// Výběr třídy vlaku - dynamicky podle dat ze serveru
+function showTrainClassModal(server) {
+    // Načteme vlaky pro daný server, získáme třídy
+    fetch(`https://panel.simrail.eu:8084/trains-open?serverCode=${server.ServerCode}`)
         .then(res => res.json())
         .then(data => {
-            const servers = data.data || [];
-            const list = document.getElementById('servers-list');
-            if (servers.length === 0) {
-                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
-                return;
-            }
-            list.innerHTML = '';
-            servers.forEach(server => {
-                const status = server.IsActive ? 'Online' : 'Offline';
-                const statusColor = server.IsActive ? '#43b581' : '#f04747';
-                let playersHtml = '';
-                if (typeof server.PlayerCount !== 'undefined') {
-                    playersHtml = `
-                        <span class="server-players">
-                            <svg width="20" height="20" style="vertical-align:middle;margin-right:4px;" fill="#43b581" viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
-                            ${server.PlayerCount} hráčů
-                        </span>
-                    `;
-                }
-                // Přidáme onclick na server-card
-                list.innerHTML += `
-                    <div class="server-card" style="animation: fadeInUp 0.5s;" data-server-id="${server.id}">
-                        <div class="server-header">
-                            <span class="server-name">${server.ServerName}</span>
-                            <span class="server-region">${server.ServerRegion}</span>
-                        </div>
-                        <div class="server-info">
-                            <span class="server-status" style="color:${statusColor};font-weight:bold;">
-                                ${status}
-                            </span>
-                            ${playersHtml}
-                        </div>
+            const trains = data.data || [];
+            const classes = extractTrainClasses(trains);
+
+            let oldModal = document.getElementById('train-class-modal');
+            if (oldModal) oldModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'train-class-modal';
+            modal.className = 'server-modal';
+            modal.innerHTML = `
+                <div class="server-modal-content" style="max-width:520px;">
+                    <span class="server-modal-close">&times;</span>
+                    <h2 style="text-align:center;margin-bottom:24px;">Vyber třídu vlaku</h2>
+                    <div id="train-class-list" style="display:flex;flex-wrap:wrap;gap:22px;justify-content:center;">
+                        ${classes.map(cls => `
+                            <div class="train-class-bubble" data-class="${cls}">
+                                <div class="train-class-title" style="color:#ffe066;">${cls}</div>
+                            </div>
+                        `).join('')}
                     </div>
-                `;
-            });
-            // Event handler pro výběr serveru
-            document.querySelectorAll('.server-card').forEach(card => {
-                card.onclick = () => {
-                    const serverId = card.getAttribute('data-server-id');
-                    const server = servers.find(s => s.id === serverId);
-                    if (server) {
-                        document.getElementById('server-modal').remove();
-                        showTrainsModal(server);
-                    }
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            setTimeout(() => { modal.classList.add('active'); }, 10);
+
+            modal.querySelector('.server-modal-close').onclick = () => {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
+            };
+
+            document.querySelectorAll('.train-class-bubble').forEach(bubble => {
+                bubble.onclick = () => {
+                    const selectedClass = bubble.getAttribute('data-class');
+                    modal.classList.remove('active');
+                    setTimeout(() => modal.remove(), 300);
+                    showTrainsModal(server, selectedClass);
                 };
             });
         })
         .catch(() => {
-            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+            // fallback: zobrazit prázdný modal
+            let oldModal = document.getElementById('train-class-modal');
+            if (oldModal) oldModal.remove();
+            const modal = document.createElement('div');
+            modal.id = 'train-class-modal';
+            modal.className = 'server-modal';
+            modal.innerHTML = `
+                <div class="server-modal-content" style="max-width:520px;">
+                    <span class="server-modal-close">&times;</span>
+                    <h2 style="text-align:center;margin-bottom:24px;">Třídy vlaků nejsou dostupné</h2>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            setTimeout(() => { modal.classList.add('active'); }, 10);
+            modal.querySelector('.server-modal-close').onclick = () => {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
+            };
         });
 }
 
-// Mapování typů vozidel na obrázky
-const vehicleImages = {
-    'eu07': 'https://wiki.simrail.eu/vehicle/eu07-005.jpg',
-    'ep08': 'https://wiki.simrail.eu/vehicle/ep08-001.jpg',
-    'et22': 'https://wiki.simrail.eu/vehicle/et22-243.png',
-    'et25': 'https://wiki.simrail.eu/vehicle/et25-002.jpg',
-    'e186': 'https://wiki.simrail.eu/vehicle/e186-134.jpg',
-    'ed250': 'https://wiki.simrail.eu/vehicle/ed250-001.png',
-    'en57': 'https://wiki.simrail.eu/vehicle/en57-009.png',
-    'en76': 'https://wiki.simrail.eu/vehicle/en76-006.jpg'
-};
-const defaultTrainImage = 'https://wiki.simrail.eu/vehicle/eu07-005.jpg'; // fallback
-
-function getVehicleImage(vehiclesArr) {
-    if (!vehiclesArr || vehiclesArr.length === 0) return defaultTrainImage;
-    // Vezmeme první vozidlo, např. "EN57/EN57-1000"
-    const firstVehicle = vehiclesArr[0].toLowerCase();
-    // Najdeme typ (např. "en57")
-    const typeMatch = firstVehicle.match(/([a-z0-9]+)/);
-    if (typeMatch) {
-        const type = typeMatch[1];
-        if (vehicleImages[type]) return vehicleImages[type];
-    }
-    return defaultTrainImage;
-}
-
-function showTrainsModal(server) {
+// Upravená funkce pro výběr vlaků podle třídy
+function showTrainsModal(server, selectedClass) {
     // Pokud modal už existuje, smažeme ho
     let oldModal = document.getElementById('trains-modal');
     if (oldModal) oldModal.remove();
@@ -597,17 +577,23 @@ function showTrainsModal(server) {
                 return;
             }
 
-            // Funkce pro vykreslení vlaků jako bublinky
             function renderTrains(filter = '') {
-                const filtered = filter
-                    ? trains.filter(train => train.TrainNoLocal && train.TrainNoLocal.toString().includes(filter.trim()))
-                    : trains;
+                let filtered = trains;
+                // Filtrovat podle třídy
+                if (selectedClass) {
+                    filtered = filtered.filter(train => getTrainClass(train) === selectedClass);
+                }
+                // Filtrovat podle vyhledávání
+                if (filter) {
+                    filtered = filtered.filter(train => train.TrainNoLocal && train.TrainNoLocal.toString().includes(filter.trim()));
+                }
                 if (filtered.length === 0) {
                     list.innerHTML = '<div class="servers-loading">Žádný vlak neodpovídá hledání.</div>';
                     return;
                 }
                 list.innerHTML = '<div class="train-bubbles">';
                 filtered.forEach(train => {
+                    // ...bublinka render viz předchozí styl...
                     const trainImg = getVehicleImage(train.Vehicles);
                     const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
                     const statusIcon = isPlayer
@@ -632,7 +618,6 @@ function showTrainsModal(server) {
 
             renderTrains();
 
-            // Event handler pro vyhledávání
             searchInput.oninput = (e) => {
                 renderTrains(e.target.value);
             };
