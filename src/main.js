@@ -633,3 +633,6 @@ function showTrainsModal(server, selectedClass) {
 
 // Spustit navigaci na výchozí stránku při načtení
 setPage('prehled');
+
+// Zajistí dostupnost funkce pro onclick v HTML
+window.showServerModal = showServerModal;
