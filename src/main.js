@@ -17,12 +17,78 @@ if (!firebase.auth) {
 }
 const auth = firebase.auth();
 
-// SPA navigation (zatím jen přehled, ostatní stránky prázdné)
+// DOM elementy
 const pageTitle = document.querySelector('.page-title');
 const pageContent = document.getElementById('page-content');
 const navBtns = document.querySelectorAll('.nav-btn');
 
+/**
+ * Dynamicky generuje HTML pro stránku s přehledem a vytváří real-time listener.
+ * Tato funkce se volá pouze JEDNOU při načtení stránky a poté se automaticky aktualizuje.
+ */
+function initializeEmployeesTable() {
+    const tableContainerId = 'employees-table-container';
+    const tableId = 'employees-table';
 
+    // Vytvoří HTML strukturu pro tabulku
+    const tableHtml = `
+        <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
+        <div id="${tableContainerId}" class="employee-table-container">
+            <table id="${tableId}" class="employee-table">
+                <thead>
+                    <tr><th>Avatar</th><th>Jméno</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `;
+
+    // Změní obsah stránky "Přehled"
+    if (pageContent) {
+        pageContent.innerHTML = tableHtml;
+    }
+
+    // Získání elementu tabulky pro aktualizace
+    const tableBody = document.querySelector(`#${tableId} tbody`);
+    if (!tableBody) {
+        console.error('Element tabulky pro zaměstnance nebyl nalezen.');
+        return;
+    }
+
+    // Naslouchá změnám v databázi v reálném čase
+    db.ref('users').on('value', snapshot => {
+        const users = snapshot.val() || {};
+        const userList = Object.values(users);
+        tableBody.innerHTML = ''; // Vyčistí tabulku před novým vykreslením
+
+        if (userList.length > 0) {
+            userList.sort((a, b) => {
+                return (b.working === true) - (a.working === true);
+            });
+
+            userList.forEach(user => {
+                const tr = document.createElement('tr');
+                const statusColor = user.working ? '#43b581' : '#f04747';
+                const statusText = user.working ? '🟢 Ve službě' : '🔴 Mimo službu';
+                tr.innerHTML = `
+                    <td>
+                        <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='${user.username} avatar' style='width:32px;height:32px;border-radius:50%;background:#222;'>
+                    </td>
+                    <td>
+                        ${user.username} <span style="font-size:0.8em;color:${statusColor};">${statusText}</span>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        } else {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádný zaměstnanec není v databázi.</td>`;
+            tableBody.appendChild(tr);
+        }
+    });
+}
+
+// SPA navigation (nyní jen přepíná obsah a pozadí)
 function setPage(page) {
     const background = document.getElementById('background');
     // Fade out
@@ -47,26 +113,13 @@ function setPage(page) {
                 break;
             case 'prehled':
                 pageTitle.textContent = 'Přehled';
-                pageContent.innerHTML = `
-                    <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-                    <div id="employees-table-container" style="margin:0 auto;max-width:600px;background:rgba(0,0,0,0.5);border-radius:8px;padding:16px;">
-                        <table id="employees-table" style="width:100%;color:#fff;text-align:left;">
-                            <thead>
-                                <tr><th>Avatar</th><th>Jméno</th></tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                `;
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                renderEmployeesTable(); // Zde se volá funkce pro vykreslení tabulky
+                initializeEmployeesTable(); // Teď se volá pouze pro nastavení HTML a listeneru
                 break;
             default:
-                // Zajištění, že se při startu načte správná stránka
                 pageTitle.textContent = 'Přehled';
-                pageContent.innerHTML = ''; // Bude nahrazeno obsahem z renderEmployeesTable()
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                renderEmployeesTable(); // Volání i pro defaultní případ
+                initializeEmployeesTable();
                 break;
         }
         // Fade in
@@ -113,7 +166,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function showDiscordProfile(user) {
     let container = document.getElementById('discord-profile-container');
     if (!container) {
-        alert('Chyba: Element pro profil nebyl nalezen.');
+        console.error('Chyba: Element pro profil nebyl nalezen.');
         return;
     }
     let profileDiv = document.getElementById('discord-profile');
@@ -219,41 +272,5 @@ function showDiscordProfile(user) {
     }
 }
 
-
-function renderEmployeesTable() {
-    const tableBody = document.querySelector('#employees-table tbody');
-    if (!tableBody) {
-        console.error('Element #employees-table tbody not found. The table structure may not be rendered yet.');
-        return;
-    }
-
-    db.ref('users').on('value', snapshot => {
-        const users = snapshot.val() || {};
-        const userList = Object.values(users);
-        tableBody.innerHTML = '';
-        
-        if (userList.length > 0) {
-            userList.sort((a, b) => {
-                return (b.working === true) - (a.working === true);
-            });
-
-            userList.forEach(user => {
-                const tr = document.createElement('tr');
-                const statusColor = user.working ? '#43b581' : '#f04747';
-                const statusText = user.working ? '🟢 Ve službě' : '🔴 Mimo službu';
-                tr.innerHTML = `
-                    <td><img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' style='width:32px;height:32px;border-radius:50%;background:#222;'></td>
-                    <td>${user.username} <span style="font-size:0.8em;color:${statusColor};">${statusText}</span></td>
-                `;
-                tableBody.appendChild(tr);
-            });
-        } else {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádný zaměstnanec není v databázi.</td>`;
-            tableBody.appendChild(tr);
-        }
-    });
-}
-
-// Spustit setPage při načtení stránky, aby se zobrazila výchozí stránka
+// Spustit navigaci na výchozí stránku při načtení
 setPage('prehled');
