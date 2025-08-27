@@ -115,17 +115,34 @@ function showRolePanel(user) {
 function initializeEmployeesTable() {
     const tableContainerId = 'employees-table-container';
     const tableId = 'employees-table';
+    const activityContainerId = 'activity-table-container';
+    const activityTableId = 'activity-table';
 
-    // Vytvoří HTML strukturu pro tabulku
+    // HTML pro tabulku zaměstnanců a aktivitu vedle sebe
     const tableHtml = `
-        <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-        <div id="${tableContainerId}" class="employee-table-container">
-            <table id="${tableId}" class="employee-table">
-                <thead>
-                    <tr><th>Avatar</th><th>Jméno</th><th>Role</th></tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <div style="display:flex;gap:32px;align-items:flex-start;">
+            <div id="${tableContainerId}" class="employee-table-container">
+                <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
+                <table id="${tableId}" class="employee-table">
+                    <thead>
+                        <tr><th>Avatar</th><th>Jméno</th><th>Role</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="${activityContainerId}" class="activity-table-container">
+                <h2 style="color:#fff;text-align:center;">Aktivita</h2>
+                <table id="${activityTableId}" class="activity-table">
+                    <thead>
+                        <tr><th>Čas</th><th>Uživatel</th><th>Akce</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3" style="text-align:center;">Žádná aktivita zatím není.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
 
