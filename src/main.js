@@ -597,7 +597,7 @@ function showTrainsModal(server) {
                 return;
             }
 
-            // Funkce pro vykreslení vlaků podle filtru
+            // Funkce pro vykreslení vlaků jako bublinky
             function renderTrains(filter = '') {
                 const filtered = filter
                     ? trains.filter(train => train.TrainNoLocal && train.TrainNoLocal.toString().includes(filter.trim()))
@@ -606,34 +606,28 @@ function showTrainsModal(server) {
                     list.innerHTML = '<div class="servers-loading">Žádný vlak neodpovídá hledání.</div>';
                     return;
                 }
-                list.innerHTML = '';
+                list.innerHTML = '<div class="train-bubbles">';
                 filtered.forEach(train => {
                     const trainImg = getVehicleImage(train.Vehicles);
                     const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
-                    const status = isPlayer ? 'Hráč' : 'Bot';
-                    const statusColor = isPlayer ? '#43b581' : '#f04747';
                     const statusIcon = isPlayer
-                        ? '<svg width="20" height="20" fill="#43b581" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
-                        : '<svg width="20" height="20" fill="#f04747" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
+                        ? '<svg width="22" height="22" fill="#43b581" style="vertical-align:middle;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
+                        : '<svg width="22" height="22" fill="#f04747" style="vertical-align:middle;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
                     const route = `${train.StartStation} → ${train.EndStation}`;
-                    const vehicles = train.Vehicles ? train.Vehicles.join(', ') : '';
                     list.innerHTML += `
-                        <div class="train-card" style="animation: fadeInUp 0.5s;">
-                            <div class="train-header">
-                                <img src="${trainImg}" alt="Vlak" class="train-image-lg">
-                                <div class="train-info">
-                                    <div class="train-number">${train.TrainNoLocal}</div>
-                                    <div class="train-name">${train.TrainName}</div>
-                                    <div class="train-route">${route}</div>
-                                    <div class="train-vehicles">${vehicles}</div>
-                                </div>
-                                <span class="train-status" style="color:${statusColor};font-weight:bold;display:flex;align-items:center;gap:6px;">
-                                    ${statusIcon}${status}
-                                </span>
+                        <div class="train-bubble train-bubble-modern">
+                            <div class="train-bubble-imgbox-modern">
+                                <img src="${trainImg}" alt="Vlak" class="train-bubble-img-modern">
+                                <span class="train-bubble-status-modern">${statusIcon}</span>
+                            </div>
+                            <div class="train-bubble-info-modern">
+                                <span class="train-bubble-number-modern">${train.TrainNoLocal}</span>
+                                <span class="train-bubble-route-modern">${route}</span>
                             </div>
                         </div>
                     `;
                 });
+                list.innerHTML += '</div>';
             }
 
             renderTrains();
