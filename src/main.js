@@ -717,9 +717,20 @@ function showTrainsModal(server) {
 
     // Načtení vlaků z API
     fetch(`https://panel.simrail.eu:8084/trains-open?serverCode=${server.ServerCode}`)
-        .then(res => res.json())
+        .then(res => {
+            // Ověř, že odpověď je OK
+            if (!res.ok) {
+                throw new Error("API odpovědělo chybou: " + res.status);
+            }
+            return res.json();
+        })
         .then(data => {
-            const trains = data.data || [];
+            // Ověř, že data jsou správná
+            if (!data || !data.result || !Array.isArray(data.data)) {
+                document.getElementById('trains-list').innerHTML = '<div class="servers-loading">Chybná odpověď API.</div>';
+                return;
+            }
+            const trains = data.data;
             const list = document.getElementById('trains-list');
             const searchInput = document.getElementById('train-search');
             if (trains.length === 0) {
@@ -836,8 +847,8 @@ function showTrainsModal(server) {
                 renderTrains(e.target.value);
             };
         })
-        .catch(() => {
-            document.getElementById('trains-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst vlaky.</div>';
+        .catch((err) => {
+            document.getElementById('trains-list').innerHTML = `<div class="servers-loading">Nepodařilo se načíst vlaky.<br>${err.message}</div>`;
         });
 }
 
