@@ -976,3 +976,4 @@ setPage('prehled');
 
 // Zajistí dostupnost funkce pro onclick v HTML
 window.showServerModal = showServerModal;
+
