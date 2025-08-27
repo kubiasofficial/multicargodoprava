@@ -217,6 +217,11 @@ function setPage(page) {
                         <button id="jizda-btn" class="jizda-btn"></button>
                     </div>
                 `;
+                // Přidáme event na tlačítko Jízda
+                setTimeout(() => {
+                    const btn = document.getElementById('jizda-btn');
+                    if (btn) btn.onclick = showServerModal;
+                }, 50);
                 break;
             case 'vypravci':
                 pageTitle.textContent = 'Výpravčí';
@@ -401,6 +406,80 @@ function showDiscordProfile(user) {
     } else {
         console.warn('profile-clickable nenalezen, event handler nenavázán!');
     }
+}
+
+function showServerModal() {
+    // Pokud modal už existuje, smažeme ho
+    let oldModal = document.getElementById('server-modal');
+    if (oldModal) oldModal.remove();
+
+    // Vytvoření modalu
+    const modal = document.createElement('div');
+    modal.id = 'server-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru SimRail</h2>
+            <div id="servers-list" class="servers-list">
+                <div class="servers-loading">Načítám servery...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Animace zobrazení
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    // Zavření modalu
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Načtení serverů z API
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = data.data || [];
+            const list = document.getElementById('servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                const status = server.IsActive ? 'Online' : 'Offline';
+                const statusColor = server.IsActive ? '#43b581' : '#f04747';
+                // Pokud server má vlastnost PlayerCount, zobrazíme ji
+                let playersHtml = '';
+                if (typeof server.PlayerCount !== 'undefined') {
+                    playersHtml = `
+                        <span class="server-players">
+                            <svg width="20" height="20" style="vertical-align:middle;margin-right:4px;" fill="#43b581" viewBox="0 0 24 24"><path d="M12 12c2.7 0 8 1.34 8 4v2H4v-2c0-2.66 5.3-4 8-4zm0-2a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/></svg>
+                            ${server.PlayerCount} hráčů
+                        </span>
+                    `;
+                }
+                list.innerHTML += `
+                    <div class="server-card" style="animation: fadeInUp 0.5s;">
+                        <div class="server-header">
+                            <span class="server-name">${server.ServerName}</span>
+                            <span class="server-region">${server.ServerRegion}</span>
+                        </div>
+                        <div class="server-info">
+                            <span class="server-status" style="color:${statusColor};font-weight:bold;">
+                                ${status}
+                            </span>
+                            ${playersHtml}
+                        </div>
+                    </div>
+                `;
+            });
+        })
+        .catch(() => {
+            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
 }
 
 // Spustit navigaci na výchozí stránku při načtení
