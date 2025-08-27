@@ -558,25 +558,27 @@ function showTrainsModal(server) {
             }
             list.innerHTML = '';
             trains.forEach(train => {
-                // Získání obrázku podle typu vozidla
                 const trainImg = getVehicleImage(train.Vehicles);
-                // Status hráč/bot
                 const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
                 const status = isPlayer ? 'Hráč' : 'Bot';
                 const statusColor = isPlayer ? '#43b581' : '#f04747';
-                // Trasa
+                const statusIcon = isPlayer
+                    ? '<svg width="20" height="20" fill="#43b581" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
+                    : '<svg width="20" height="20" fill="#f04747" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
                 const route = `${train.StartStation} → ${train.EndStation}`;
+                const vehicles = train.Vehicles ? train.Vehicles.join(', ') : '';
                 list.innerHTML += `
                     <div class="train-card" style="animation: fadeInUp 0.5s;">
                         <div class="train-header">
-                            <img src="${trainImg}" alt="Vlak" class="train-image">
+                            <img src="${trainImg}" alt="Vlak" class="train-image-lg">
                             <div class="train-info">
                                 <div class="train-number">${train.TrainNoLocal}</div>
                                 <div class="train-name">${train.TrainName}</div>
                                 <div class="train-route">${route}</div>
+                                <div class="train-vehicles">${vehicles}</div>
                             </div>
-                            <span class="train-status" style="color:${statusColor};font-weight:bold;">
-                                ${status}
+                            <span class="train-status" style="color:${statusColor};font-weight:bold;display:flex;align-items:center;gap:6px;">
+                                ${statusIcon}${status}
                             </span>
                         </div>
                     </div>

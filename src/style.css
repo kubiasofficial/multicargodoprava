@@ -468,24 +468,28 @@ body {
   flex-direction: column;
   gap: 8px;
   transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  border: 2px solid transparent;
   position: relative;
   animation: fadeInUp 0.5s;
+  transition: background 0.2s, box-shadow 0.2s;
 }
 .train-card:hover {
-  transform: scale(1.03);
-  box-shadow: 0 6px 24px #43b58144;
+  background: #23272a;
+  box-shadow: 0 8px 32px #43b58199;
   border: 2px solid #43b581;
 }
 .train-header {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
+  min-height: 60px;
 }
-.train-image {
-  width: 64px;
-  height: 40px;
+.train-image-lg {
+  width: 80px;
+  height: 50px;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: 10px;
   background: #181a20;
   box-shadow: 0 2px 8px #23272a55;
 }
@@ -493,24 +497,32 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 160px;
+  min-width: 180px;
 }
 .train-number {
-  font-size: 1.15em;
+  font-size: 1.25em;
   font-weight: bold;
   color: #fff;
 }
 .train-name {
-  font-size: 1em;
+  font-size: 1.05em;
   color: #43b581;
   font-weight: bold;
 }
 .train-route {
-  font-size: 0.95em;
+  font-size: 0.98em;
   color: #aaa;
+}
+.train-vehicles {
+  font-size: 0.9em;
+  color: #888;
+  margin-top: 2px;
 }
 .train-status {
   font-size: 1.1em;
   font-weight: bold;
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
