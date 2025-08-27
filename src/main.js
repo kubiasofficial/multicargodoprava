@@ -112,39 +112,7 @@ function showRolePanel(user) {
     };
 }
 
-function initializeEmployeesTable() {
-    const tableContainerId = 'employees-table-container';
-    const tableId = 'employees-table';
-    const activityContainerId = 'activity-table-container';
-    const activityTableId = 'activity-table';
 
-    // HTML pro tabulku zaměstnanců a aktivitu vedle sebe
-    const tableHtml = `
-        <div class="tables-flex-container">
-            <div id="${tableContainerId}" class="employee-table-container">
-                <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-                <table id="${tableId}" class="employee-table">
-                    <thead>
-                        <tr><th>Avatar</th><th>Jméno</th><th>Role</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div id="${activityContainerId}" class="activity-table-container">
-                <h2 style="color:#fff;text-align:center;">Aktivita</h2>
-                <table id="${activityTableId}" class="activity-table">
-                    <thead>
-                        <tr><th>Zaměstnanec</th><th>Práce</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="2" style="text-align:center;">Žádná aktivita zatím není.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
 
     // Změní obsah stránky "Přehled"
     if (pageContent) {
@@ -228,7 +196,7 @@ function initializeEmployeesTable() {
         updateTable();
         updateActivityTable();
     }, 30000);
-}
+
 
 // SPA navigation (nyní jen přepíná obsah a pozadí)
 function setPage(page) {
