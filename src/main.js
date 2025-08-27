@@ -214,7 +214,7 @@ function setPage(page) {
                 pageContent.innerHTML = `
                     <h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí</h2>
                     <div style="display:flex;justify-content:center;margin-top:48px;">
-                        <button id="jizda-btn" class="jizda-btn"></button>
+                        <button id="jizda-btn" class="jizda-btn">Jízda</button>
                     </div>
                 `;
                 // Oprava: navázání eventu na tlačítko po vykreslení
