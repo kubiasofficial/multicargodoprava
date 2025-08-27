@@ -217,11 +217,15 @@ function setPage(page) {
                         <button id="jizda-btn" class="jizda-btn"></button>
                     </div>
                 `;
-                // Přidáme event na tlačítko Jízda
+                // Oprava: navázání eventu na tlačítko po vykreslení
                 setTimeout(() => {
                     const btn = document.getElementById('jizda-btn');
-                    if (btn) btn.onclick = showServerModal;
-                }, 50);
+                    if (btn) {
+                        btn.onclick = () => {
+                            showServerModal();
+                        };
+                    }
+                }, 150); // delší zpoždění pro jistotu
                 break;
             case 'vypravci':
                 pageTitle.textContent = 'Výpravčí';
