@@ -863,5 +863,80 @@ setPage('prehled');
 // Zajistí dostupnost funkce pro onclick v HTML
 window.showServerModal = showServerModal;
 
-// vše je správně, duplicity nejsou, build by měl projít
+// Oprava: tlačítko "Jízda" musí být klikatelné a musí fungovat správně.
+// 1. Zajistíme, že funkce showServerModal existuje a otevře modal vlaků.
+// 2. Opravíme navázání eventu na tlačítko "Jízda" (použijeme delegaci pro jistotu).
+
+function showServerModal() {
+    // Modal pro výběr serveru
+    let oldModal = document.getElementById('server-select-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'server-select-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:500px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru</h2>
+            <div id="servers-list" class="servers-list">
+                <div class="servers-loading">Načítám servery...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Načtení serverů z API
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.innerHTML = `
+                    <div class="server-header">
+                        <span>${server.ServerName}</span>
+                        <span class="server-region">${server.ServerRegion}</span>
+                    </div>
+                    <div class="server-info">
+                        <span class="server-status">${server.Status}</span>
+                        <span class="server-players">👥 ${server.PlayersCount || 0}</span>
+                    </div>
+                `;
+                div.onclick = () => {
+                    modal.classList.remove('active');
+                    setTimeout(() => modal.remove(), 300);
+                    showTrainsModal(server);
+                };
+                list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+}
+window.showServerModal = showServerModal;
+
+// Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#jizda-btn');
+    if (btn) {
+        e.preventDefault();
+        showServerModal();
+    }
+});
 
