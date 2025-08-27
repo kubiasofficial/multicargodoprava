@@ -262,3 +262,36 @@ body {
   border: 1.5px solid #43b581;
   outline: none;
 }
+
+.jizda-btn {
+  width: 220px;
+  height: 80px;
+  background: url('/Pictures/1183.png') center center/cover no-repeat;
+  border: none;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #23272a99;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+.jizda-btn::after {
+  content: "Jízda";
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 0 2px 8px #000;
+  pointer-events: none;
+}
+.jizda-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 32px #43b58199;
+}

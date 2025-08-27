@@ -193,8 +193,13 @@ function setPage(page) {
         switch (page) {
             case 'strojvedouci':
                 pageTitle.textContent = 'Strojvedoucí';
-                pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí je ve vývoji.</h2>';
                 background.style.background = "url('/Pictures/1185.png') center center/cover no-repeat";
+                pageContent.innerHTML = `
+                    <h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí</h2>
+                    <div style="display:flex;justify-content:center;margin-top:48px;">
+                        <button id="jizda-btn" class="jizda-btn"></button>
+                    </div>
+                `;
                 break;
             case 'vypravci':
                 pageTitle.textContent = 'Výpravčí';
