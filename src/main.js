@@ -631,6 +631,101 @@ function showTrainsModal(server, selectedClass) {
         });
 }
 
+// Funkce pro zobrazení serverového modalu a načtení serverů
+function showServerModal() {
+    // Pokud modal už existuje, smažeme ho
+    let oldModal = document.getElementById('server-modal');
+    if (oldModal) oldModal.remove();
+
+    // Vytvoření nového modalu
+    const modal = document.createElement('div');
+    modal.id = 'server-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Vyber server</h2>
+            <div id="servers-list" class="servers-list">
+                <div class="servers-loading">Načítám servery...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Načtení serverů z API
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = data.data || [];
+            const list = document.getElementById('servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                // Stav serveru
+                let status = 'Neznámý';
+                let statusColor = '#aaa';
+                if (server.Online) {
+                    status = 'Online';
+                    statusColor = '#43b581';
+                } else {
+                    status = 'Offline';
+                    statusColor = '#f04747';
+                }
+
+                // Počet hráčů
+                let playersHtml = '';
+                if (server.Players && server.MaxPlayers) {
+                    const percent = Math.round((server.Players / server.MaxPlayers) * 100);
+                    playersHtml = `
+                        <div class="server-players" style="display:flex;align-items:center;gap:6px;">
+                            <div class="server-player-fill" style="width:${percent}%;background:${statusColor};height:4px;border-radius:2px;"></div>
+                            <div class="server-player-count" style="color:#fff;font-size:0.9em;">${server.Players}/${server.MaxPlayers}</div>
+                        </div>
+                    `;
+                }
+
+                list.innerHTML += `
+                    <div class="server-card" style="animation: fadeInUp 0.5s;" data-server-id="${server.id}">
+                        <div class="server-header">
+                            <span class="server-name">${server.ServerName}</span>
+                            <span class="server-region">${server.ServerRegion}</span>
+                        </div>
+                        <div class="server-info">
+                            <span class="server-status" style="color:${statusColor};font-weight:bold;">
+                                ${status}
+                            </span>
+                            ${playersHtml}
+                        </div>
+                    </div>
+                `;
+            });
+            // Oprava: po kliknutí na server rovnou zobrazíme výběr vlaků
+            document.querySelectorAll('.server-card').forEach(card => {
+                card.onclick = () => {
+                    const serverId = card.getAttribute('data-server-id');
+                    const server = servers.find(s => s.id === serverId);
+                    if (server) {
+                        document.getElementById('server-modal').remove();
+                        showTrainsModal(server); // přímo výběr vlaků
+                    }
+                };
+            });
+        })
+        .catch(() => {
+            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+}
+
 // Spustit navigaci na výchozí stránku při načtení
 setPage('prehled');
 
