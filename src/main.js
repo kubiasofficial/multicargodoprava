@@ -10,6 +10,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 // Firebase Authentication
 if (!firebase.auth) {
     alert('Chybí Firebase Auth SDK! Přidejte <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> do index.html.');
@@ -31,12 +32,12 @@ function setPage(page) {
         switch (page) {
             case 'strojvedouci':
                 pageTitle.textContent = 'Strojvedoucí';
-                pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí je ve vývooji.</h2>';
+                pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Strojvedoucí je ve vývoji.</h2>';
                 background.style.background = "url('/Pictures/1185.png') center center/cover no-repeat";
                 break;
             case 'vypravci':
                 pageTitle.textContent = 'Výpravčí';
-                pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí je ve vývoji Děkuji za trpělivost.</h2>';
+                pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí je ve vývoji. Děkuji za trpělivost.</h2>';
                 background.style.background = "url('/Pictures/Koluszki.png') center center/cover no-repeat";
                 break;
             case 'ridic':
@@ -58,12 +59,15 @@ function setPage(page) {
                     </div>
                 `;
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                renderEmployeesTable();
+                renderEmployeesTable(); // Zde se volá funkce pro vykreslení tabulky
                 break;
             default:
+                // Zajištění, že se při startu načte správná stránka
                 pageTitle.textContent = 'Přehled';
-                pageContent.innerHTML = '';
+                pageContent.innerHTML = ''; // Bude nahrazeno obsahem z renderEmployeesTable()
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
+                renderEmployeesTable(); // Volání i pro defaultní případ
+                break;
         }
         // Fade in
         pageContent.classList.remove('fade-out');
@@ -77,11 +81,9 @@ navBtns.forEach(btn => {
     });
 });
 
-
 // Discord OAuth2 login logic
 window.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('discord-modal');
-    // Získání access tokenu z URL fragmentu
     const hash = window.location.hash;
     let accessToken = null;
     if (hash && hash.includes('access_token')) {
@@ -90,7 +92,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (accessToken) {
-        // Načtení uživatelských dat z Discord API
         fetch('https://discord.com/api/users/@me', {
             headers: {
                 'Authorization': 'Bearer ' + accessToken
@@ -98,22 +99,18 @@ window.addEventListener('DOMContentLoaded', () => {
         })
             .then(res => res.json())
             .then(user => {
-                // Skrytí modálního okna
                 if (modal) modal.style.display = 'none';
-                // Zobrazení profilu v panelu vlevo dole
                 showDiscordProfile(user);
             })
             .catch(() => {
                 if (modal) modal.style.display = 'flex';
             });
     } else {
-        // Pokud není token, zobraz modal
         if (modal) modal.style.display = 'flex';
     }
 });
 
 function showDiscordProfile(user) {
-    // Vytvoření/umístění do pravého horního rohu
     let container = document.getElementById('discord-profile-container');
     if (!container) {
         alert('Chyba: Element pro profil nebyl nalezen.');
@@ -141,8 +138,6 @@ function showDiscordProfile(user) {
         `;
     }
 
-    // Zápis uživatele do Firebase Realtime Database
-    // Zápis uživatele do Firebase Realtime Database (pouze pokud existuje)
     if (user && user.id && user.username) {
         db.ref('users/' + user.id).update({
             username: user.username,
@@ -151,26 +146,21 @@ function showDiscordProfile(user) {
         });
     }
 
-    // Navázání event handleru na profile-clickable až po zápisu do Firebase
     const clickable = document.getElementById('profile-clickable');
     if (clickable) {
         clickable.onclick = () => {
             document.getElementById('work-modal').classList.add('active');
-            // Obsluha zavření modalu
             const closeBtn = document.getElementById('work-modal-close');
             if (closeBtn) {
                 closeBtn.onclick = () => {
                     document.getElementById('work-modal').classList.remove('active');
                 };
             }
-            // Obsluha tlačítek příchod/odchod
             const arrivalBtn = document.getElementById('work-arrival');
             if (arrivalBtn) {
                 arrivalBtn.onclick = () => {
                     document.getElementById('work-modal').classList.remove('active');
-                    // Označení uživatele jako "ve službě"
                     db.ref('users/' + user.id).update({ working: true });
-                    // Odeslání zprávy na Discord webhook
                     const now = new Date();
                     const timeString = now.toLocaleString('cs-CZ');
                     fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
@@ -199,9 +189,7 @@ function showDiscordProfile(user) {
                 leaveBtn.onclick = () => {
                     console.log('Kliknutí na Odchod!');
                     document.getElementById('work-modal').classList.remove('active');
-                    // Označení uživatele jako "mimo službu"
                     db.ref('users/' + user.id).update({ working: false });
-                    // Odeslání zprávy na Discord webhook
                     const now = new Date();
                     const timeString = now.toLocaleString('cs-CZ');
                     fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
@@ -225,7 +213,6 @@ function showDiscordProfile(user) {
                     });
                 };
             }
-            console.log('Modal by měl být aktivní:', document.getElementById('work-modal').classList);
         }
     } else {
         console.warn('profile-clickable nenalezen, event handler nenavázán!');
@@ -233,10 +220,12 @@ function showDiscordProfile(user) {
 }
 
 
-// Funkce pro vykreslení tabulky zaměstnanců na stránce Přehled
 function renderEmployeesTable() {
     const tableBody = document.querySelector('#employees-table tbody');
-    if (!tableBody) return;
+    if (!tableBody) {
+        console.error('Element #employees-table tbody not found. The table structure may not be rendered yet.');
+        return;
+    }
 
     db.ref('users').on('value', snapshot => {
         const users = snapshot.val() || {};
@@ -245,13 +234,12 @@ function renderEmployeesTable() {
         
         if (userList.length > 0) {
             userList.sort((a, b) => {
-                // Přesune uživatele s working: true na začátek
                 return (b.working === true) - (a.working === true);
             });
 
             userList.forEach(user => {
                 const tr = document.createElement('tr');
-                const statusColor = user.working ? '#43b581' : '#f04747'; // Zelená pro "ve službě", červená pro "mimo službu"
+                const statusColor = user.working ? '#43b581' : '#f04747';
                 const statusText = user.working ? '🟢 Ve službě' : '🔴 Mimo službu';
                 tr.innerHTML = `
                     <td><img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' style='width:32px;height:32px;border-radius:50%;background:#222;'></td>
@@ -267,5 +255,5 @@ function renderEmployeesTable() {
     });
 }
 
-
-setPage();
+// Spustit setPage při načtení stránky, aby se zobrazila výchozí stránka
+setPage('prehled');
