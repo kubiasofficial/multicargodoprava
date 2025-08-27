@@ -264,11 +264,13 @@ function showProfileModal(user) {
     // Tlačítka příchod/odchod
     document.getElementById('profile-arrival').onclick = () => {
         db.ref('users/' + user.id).update({ working: true });
+        sendDiscordWebhook(`✅ ${user.username} přišel do služby`);
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     };
     document.getElementById('profile-leave').onclick = () => {
         db.ref('users/' + user.id).update({ working: false });
+        sendDiscordWebhook(`❌ ${user.username} odešel ze služby`);
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     };
