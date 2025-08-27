@@ -29,6 +29,88 @@ const navBtns = document.querySelectorAll('.nav-btn');
 let employeesListener = null;
 let employeesInterval = null;
 let selectedRole = null;
+let currentUserRole = null;
+
+// Pomocná funkce pro zobrazení navigace podle role
+function updateNavigationByRole(role) {
+    navBtns.forEach(btn => {
+        const page = btn.dataset.page;
+        if (page === 'prehled') {
+            btn.style.display = 'flex';
+        } else if (
+            (role === 'Strojvedoucí' && page === 'strojvedouci') ||
+            (role === 'Výpravčí' && page === 'vypravci') ||
+            (role === 'Řidič' && page === 'ridic')
+        ) {
+            btn.style.display = 'flex';
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+}
+
+// Přidáme panel pro výběr role vpravo nahoře
+function showRolePanel(user) {
+    let rolePanel = document.getElementById('role-panel');
+    if (!rolePanel) {
+        rolePanel = document.createElement('div');
+        rolePanel.id = 'role-panel';
+        rolePanel.style.position = 'fixed';
+        rolePanel.style.top = '70px';
+        rolePanel.style.right = '32px';
+        rolePanel.style.background = 'rgba(44,47,51,0.95)';
+        rolePanel.style.padding = '12px 24px';
+        rolePanel.style.borderRadius = '16px';
+        rolePanel.style.boxShadow = '0 2px 12px rgba(0,0,0,0.18)';
+        rolePanel.style.zIndex = '1002';
+        rolePanel.style.display = 'none';
+        rolePanel.innerHTML = `
+            <label for="role-panel-select" style="color:#fff;font-weight:bold;font-size:1.1em;margin-right:12px;">Role:</label>
+            <select id="role-panel-select" style="background:#23272a;color:#fff;border:1px solid #43b581;border-radius:6px;padding:6px 12px;font-size:1em;">
+                <option value="Strojvedoucí">Strojvedoucí</option>
+                <option value="Výpravčí">Výpravčí</option>
+                <option value="Řidič">Řidič</option>
+            </select>
+        `;
+        document.body.appendChild(rolePanel);
+    }
+
+    // Získáme aktuální roli uživatele
+    db.ref('users/' + user.id).once('value').then(snap => {
+        if (snap.val() && snap.val().role) {
+            document.getElementById('role-panel-select').value = snap.val().role;
+            currentUserRole = snap.val().role;
+            updateNavigationByRole(currentUserRole);
+        }
+    });
+
+    // Zobrazíme panel pouze pokud je uživatel ve službě
+    db.ref('users/' + user.id).on('value', snap => {
+        const val = snap.val();
+        if (val && val.working === true) {
+            rolePanel.style.display = 'flex';
+            currentUserRole = val.role;
+            updateNavigationByRole(currentUserRole);
+        } else {
+            rolePanel.style.display = 'none';
+            currentUserRole = val ? val.role : null;
+            updateNavigationByRole(currentUserRole);
+        }
+    });
+
+    // Změna role v panelu
+    document.getElementById('role-panel-select').onchange = (e) => {
+        const newRole = e.target.value;
+        selectedRole = newRole;
+        currentUserRole = newRole;
+        db.ref('users/' + user.id).update({ role: newRole });
+        updateNavigationByRole(newRole);
+        // Přepnutí stránky podle role
+        if (newRole === 'Strojvedoucí') setPage('strojvedouci');
+        else if (newRole === 'Výpravčí') setPage('vypravci');
+        else if (newRole === 'Řidič') setPage('ridic');
+    };
+}
 
 function initializeEmployeesTable() {
     const tableContainerId = 'employees-table-container';
@@ -210,61 +292,38 @@ function showDiscordProfile(user) {
             avatar: user.avatar,
             id: user.id
         });
+        showRolePanel(user);
+        // Načteme roli a nastavíme navigaci
+        db.ref('users/' + user.id).once('value').then(snap => {
+            if (snap.val() && snap.val().role) {
+                currentUserRole = snap.val().role;
+                updateNavigationByRole(currentUserRole);
+            }
+        });
     }
 
     const clickable = document.getElementById('profile-clickable');
     if (clickable) {
         clickable.onclick = () => {
-            // Přidáme výběr role do modálního okna
+            // Modal pro příchod/odchod z práce, role se vybírá v panelu vpravo nahoře
             const modal = document.getElementById('work-modal');
             modal.classList.add('active');
-            let roleSelect = document.getElementById('role-select');
-            if (!roleSelect) {
-                // Přidáme select do modalu pokud tam není
-                const modalContent = modal.querySelector('.modal-content') || modal;
-                const selectHtml = `
-                    <div style="margin-bottom:16px;">
-                        <label for="role-select" style="color:#fff;font-weight:bold;">Vyberte roli:</label>
-                        <select id="role-select" style="margin-left:12px;padding:6px 12px;border-radius:6px;">
-                            <option value="">--Vyberte--</option>
-                            <option value="Strojvedoucí">Strojvedoucí</option>
-                            <option value="Výpravčí">Výpravčí</option>
-                            <option value="Řidič">Řidič</option>
-                        </select>
-                    </div>
-                `;
-                modalContent.insertAdjacentHTML('afterbegin', selectHtml);
-                roleSelect = document.getElementById('role-select');
-            }
-            // Nastavíme aktuální roli uživatele pokud existuje
-            db.ref('users/' + user.id).once('value').then(snap => {
-                if (snap.val() && snap.val().role) {
-                    roleSelect.value = snap.val().role;
-                }
-            });
-
-            // Uložíme roli při změně
-            roleSelect.onchange = () => {
-                selectedRole = roleSelect.value;
-                db.ref('users/' + user.id).update({ role: selectedRole });
-            };
+            // Skryjeme výběr role v modalu pokud existuje
+            const roleSelect = document.getElementById('role-select');
+            if (roleSelect) roleSelect.parentElement.style.display = 'none';
 
             // Změna stránky podle role po zavření modalu
             const closeBtn = document.getElementById('work-modal-close');
             if (closeBtn) {
                 closeBtn.onclick = () => {
                     modal.classList.remove('active');
-                    if (selectedRole === 'Strojvedoucí') setPage('strojvedouci');
-                    else if (selectedRole === 'Výpravčí') setPage('vypravci');
-                    else if (selectedRole === 'Řidič') setPage('ridic');
                 };
             }
             const arrivalBtn = document.getElementById('work-arrival');
             if (arrivalBtn) {
                 arrivalBtn.onclick = () => {
                     modal.classList.remove('active');
-                    db.ref('users/' + user.id).update({ working: true, role: roleSelect.value });
-                    selectedRole = roleSelect.value;
+                    db.ref('users/' + user.id).update({ working: true });
                     const now = new Date();
                     const timeString = now.toLocaleString('cs-CZ');
                     fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
@@ -286,18 +345,13 @@ function showDiscordProfile(user) {
                             }]
                         })
                     });
-                    // Změna stránky podle role
-                    if (selectedRole === 'Strojvedoucí') setPage('strojvedouci');
-                    else if (selectedRole === 'Výpravčí') setPage('vypravci');
-                    else if (selectedRole === 'Řidič') setPage('ridic');
                 };
             }
             const leaveBtn = document.getElementById('work-leave');
             if (leaveBtn) {
                 leaveBtn.onclick = () => {
                     modal.classList.remove('active');
-                    db.ref('users/' + user.id).update({ working: false, role: roleSelect.value });
-                    selectedRole = roleSelect.value;
+                    db.ref('users/' + user.id).update({ working: false });
                     const now = new Date();
                     const timeString = now.toLocaleString('cs-CZ');
                     fetch('https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK', {
