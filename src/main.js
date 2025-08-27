@@ -43,23 +43,22 @@ function setPage(page) {
         pageTitle.textContent = 'Řidič';
         pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič je ve vývoji.</h2>';
         background.style.background = "url('/Pictures/bus.png') center center/cover no-repeat";
-        break;
-      case 'prehled':
-        pageTitle.textContent = 'Přehled';
-        pageContent.innerHTML = `
-          <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-          <div id="employees-table-container" style="margin:0 auto;max-width:600px;background:rgba(0,0,0,0.5);border-radius:8px;padding:16px;">
-            <table id="employees-table" style="width:100%;color:#fff;text-align:left;">
-              <thead>
-                <tr><th>Avatar</th><th>Jméno</th></tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        `;
-        background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-        renderEmployeesTable();
-        break;
+case 'prehled':
+  pageTitle.textContent = 'Přehled';
+  pageContent.innerHTML = `
+    <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
+    <div id="employees-table-container" style="margin:0 auto;max-width:600px;background:rgba(0,0,0,0.5);border-radius:8px;padding:16px;">
+      <table id="employees-table" style="width:100%;color:#fff;text-align:left;">
+        <thead>
+          <tr><th>Avatar</th><th>Jméno</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  `;
+  background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
+  renderEmployeesTable(); 
+  break;
       default:
         pageTitle.textContent = 'Přehled';
         pageContent.innerHTML = '';
@@ -234,11 +233,14 @@ function showDiscordProfile(user) {
 // Funkce pro vykreslení tabulky zaměstnanců na stránce Přehled
 function renderEmployeesTable() {
   const tableBody = document.querySelector('#employees-table tbody');
-  if (!tableBody) return;
-  // Poslouchat změny v /users kde working==true
+  if (!tableBody) return; // Ujistí se, že tabulka existuje
+
+  // Toto je klíčový řádek, který načítá POUZE zaměstnance s working: true
   db.ref('users').orderByChild('working').equalTo(true).on('value', snapshot => {
-    const users = snapshot.val() || {};
-    tableBody.innerHTML = '';
+    const users = snapshot.val() || {}; // Získá data nebo prázdný objekt
+    tableBody.innerHTML = ''; // Vyprázdní tabulku
+
+    // Vykreslí řádky jen pro existující uživatele ve službě
     Object.values(users).forEach(user => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -247,7 +249,8 @@ function renderEmployeesTable() {
       `;
       tableBody.appendChild(tr);
     });
-    // Pokud není nikdo ve službě
+
+    // A zde je logika pro prázdnou tabulku, když nikdo není "ve službě"
     if (Object.keys(users).length === 0) {
       const tr = document.createElement('tr');
       tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádný zaměstnanec není ve službě.</td>`;
