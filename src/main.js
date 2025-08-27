@@ -58,31 +58,26 @@ function initializeEmployeesTable() {
     // Naslouchá změnám v databázi v reálném čase
     db.ref('users').on('value', snapshot => {
         const users = snapshot.val() || {};
-        const userList = Object.values(users);
+        // Filtrujeme pouze zaměstnance ve službě
+        const userList = Object.values(users).filter(u => u.working === true);
         tableBody.innerHTML = ''; // Vyčistí tabulku před novým vykreslením
 
         if (userList.length > 0) {
-            userList.sort((a, b) => {
-                return (b.working === true) - (a.working === true);
-            });
-
             userList.forEach(user => {
                 const tr = document.createElement('tr');
-                const statusColor = user.working ? '#43b581' : '#f04747';
-                const statusText = user.working ? '🟢 Ve službě' : '🔴 Mimo službu';
                 tr.innerHTML = `
                     <td>
                         <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='${user.username} avatar' style='width:32px;height:32px;border-radius:50%;background:#222;'>
                     </td>
                     <td>
-                        ${user.username} <span style="font-size:0.8em;color:${statusColor};">${statusText}</span>
+                        ${user.username} <span style="font-size:0.8em;color:#43b581;">🟢 Ve službě</span>
                     </td>
                 `;
                 tableBody.appendChild(tr);
             });
         } else {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádný zaměstnanec není v databázi.</td>`;
+            tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádný zaměstnanec není ve službě.</td>`;
             tableBody.appendChild(tr);
         }
     });

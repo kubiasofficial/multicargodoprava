@@ -44,11 +44,16 @@
 #employees-table-container {
  width: 100%;
  max-width: 500px;
- margin: 32px auto 0 auto;
+ /* Změna: tabulka vlevo nahoře */
+ margin: 24px 0 0 24px;
+ position: absolute;
+ top: 0;
+ left: 0;
  background: rgba(44,47,51,0.85);
  border-radius: 12px;
  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
  padding: 16px;
+ z-index: 10;
 }
 
 /* Opraveno: selektor pro tabulku */
