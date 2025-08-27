@@ -532,6 +532,10 @@ function showTrainsModal(server) {
         <div class="server-modal-content">
             <span class="server-modal-close">&times;</span>
             <h2 style="text-align:center;margin-bottom:24px;">Vlaky na serveru ${server.ServerName}</h2>
+            <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
+                <input type="text" id="train-search" class="train-search" placeholder="Vyhledat podle čísla vlaku..." style="flex:1;">
+                <div id="server-time-box" class="server-time-box" style="min-width:170px;text-align:right;"></div>
+            </div>
             <div id="trains-list" class="trains-list">
                 <div class="servers-loading">Načítám vlaky...</div>
             </div>
@@ -546,44 +550,106 @@ function showTrainsModal(server) {
         setTimeout(() => modal.remove(), 300);
     };
 
+    // Zobrazení času serveru a časové zóny
+    let serverTimeInterval = null;
+    function updateServerTime() {
+        // Získání časové zóny
+        fetch(`https://api1.aws.simrail.eu:8082/api/getTimeZone?serverCode=${server.ServerCode}`)
+            .then(res => res.json())
+            .then(timezone => {
+                // Získání času
+                fetch(`https://api1.aws.simrail.eu:8082/api/getTime?serverCode=${server.ServerCode}`)
+                    .then(res => res.json())
+                    .then(unixTime => {
+                        const date = new Date(Number(unixTime));
+                        // Formátování času
+                        const hours = date.getUTCHours() + Number(timezone);
+                        const minutes = date.getUTCMinutes();
+                        const seconds = date.getUTCSeconds();
+                        // Ošetření přetečení hodin
+                        const displayHours = ((hours % 24) + 24) % 24;
+                        const timeStr = `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        const tzStr = `UTC${timezone >= 0 ? '+' : ''}${timezone}`;
+                        document.getElementById('server-time-box').innerHTML = `
+                            <span style="font-size:1.08em;color:#43b581;font-weight:bold;">${timeStr}</span>
+                            <span style="font-size:0.95em;color:#aaa;margin-left:6px;">(${tzStr})</span>
+                        `;
+                    })
+                    .catch(() => {
+                        document.getElementById('server-time-box').innerHTML = `<span style="color:#f04747;">Chyba času</span>`;
+                    });
+            })
+            .catch(() => {
+                document.getElementById('server-time-box').innerHTML = `<span style="color:#f04747;">Chyba zóny</span>`;
+            });
+    }
+    updateServerTime();
+    serverTimeInterval = setInterval(updateServerTime, 5000);
+
+    // Vyčistit interval při zavření modalu
+    modal.addEventListener('transitionend', () => {
+        if (!modal.classList.contains('active') && serverTimeInterval) {
+            clearInterval(serverTimeInterval);
+        }
+    });
+
     // Načtení vlaků z API
     fetch(`https://panel.simrail.eu:8084/trains-open?serverCode=${server.ServerCode}`)
         .then(res => res.json())
         .then(data => {
             const trains = data.data || [];
             const list = document.getElementById('trains-list');
+            const searchInput = document.getElementById('train-search');
             if (trains.length === 0) {
                 list.innerHTML = '<div class="servers-loading">Žádné vlaky nejsou dostupné.</div>';
                 return;
             }
-            list.innerHTML = '';
-            trains.forEach(train => {
-                const trainImg = getVehicleImage(train.Vehicles);
-                const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
-                const status = isPlayer ? 'Hráč' : 'Bot';
-                const statusColor = isPlayer ? '#43b581' : '#f04747';
-                const statusIcon = isPlayer
-                    ? '<svg width="20" height="20" fill="#43b581" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
-                    : '<svg width="20" height="20" fill="#f04747" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
-                const route = `${train.StartStation} → ${train.EndStation}`;
-                const vehicles = train.Vehicles ? train.Vehicles.join(', ') : '';
-                list.innerHTML += `
-                    <div class="train-card" style="animation: fadeInUp 0.5s;">
-                        <div class="train-header">
-                            <img src="${trainImg}" alt="Vlak" class="train-image-lg">
-                            <div class="train-info">
-                                <div class="train-number">${train.TrainNoLocal}</div>
-                                <div class="train-name">${train.TrainName}</div>
-                                <div class="train-route">${route}</div>
-                                <div class="train-vehicles">${vehicles}</div>
+
+            // Funkce pro vykreslení vlaků podle filtru
+            function renderTrains(filter = '') {
+                const filtered = filter
+                    ? trains.filter(train => train.TrainNoLocal && train.TrainNoLocal.toString().includes(filter.trim()))
+                    : trains;
+                if (filtered.length === 0) {
+                    list.innerHTML = '<div class="servers-loading">Žádný vlak neodpovídá hledání.</div>';
+                    return;
+                }
+                list.innerHTML = '';
+                filtered.forEach(train => {
+                    const trainImg = getVehicleImage(train.Vehicles);
+                    const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
+                    const status = isPlayer ? 'Hráč' : 'Bot';
+                    const statusColor = isPlayer ? '#43b581' : '#f04747';
+                    const statusIcon = isPlayer
+                        ? '<svg width="20" height="20" fill="#43b581" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
+                        : '<svg width="20" height="20" fill="#f04747" style="vertical-align:middle;margin-right:4px;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
+                    const route = `${train.StartStation} → ${train.EndStation}`;
+                    const vehicles = train.Vehicles ? train.Vehicles.join(', ') : '';
+                    list.innerHTML += `
+                        <div class="train-card" style="animation: fadeInUp 0.5s;">
+                            <div class="train-header">
+                                <img src="${trainImg}" alt="Vlak" class="train-image-lg">
+                                <div class="train-info">
+                                    <div class="train-number">${train.TrainNoLocal}</div>
+                                    <div class="train-name">${train.TrainName}</div>
+                                    <div class="train-route">${route}</div>
+                                    <div class="train-vehicles">${vehicles}</div>
+                                </div>
+                                <span class="train-status" style="color:${statusColor};font-weight:bold;display:flex;align-items:center;gap:6px;">
+                                    ${statusIcon}${status}
+                                </span>
                             </div>
-                            <span class="train-status" style="color:${statusColor};font-weight:bold;display:flex;align-items:center;gap:6px;">
-                                ${statusIcon}${status}
-                            </span>
                         </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            }
+
+            renderTrains();
+
+            // Event handler pro vyhledávání
+            searchInput.oninput = (e) => {
+                renderTrains(e.target.value);
+            };
         })
         .catch(() => {
             document.getElementById('trains-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst vlaky.</div>';
