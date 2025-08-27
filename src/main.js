@@ -256,4 +256,4 @@ function renderEmployeesTable() {
   }
 }
 
-setPage('prehled');
+setPage();
