@@ -534,7 +534,7 @@ function showTrainsModal(server) {
             <h2 style="text-align:center;margin-bottom:24px;">Vlaky na serveru ${server.ServerName}</h2>
             <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
                 <input type="text" id="train-search" class="train-search" placeholder="Vyhledat podle čísla vlaku..." style="flex:1;">
-                <div id="server-time-box" class="server-time-box" style="min-width:170px;text-align:right;"></div>
+                <div id="local-time-box" class="server-time-box" style="min-width:170px;text-align:right;"></div>
             </div>
             <div id="trains-list" class="trains-list">
                 <div class="servers-loading">Načítám vlaky...</div>
@@ -550,46 +550,36 @@ function showTrainsModal(server) {
         setTimeout(() => modal.remove(), 300);
     };
 
-    // Zobrazení času serveru a časové zóny
-    let serverTimeInterval = null;
-    function updateServerTime() {
-        // Získání časové zóny
-        fetch(`https://api1.aws.simrail.eu:8082/api/getTimeZone?serverCode=${server.ServerCode}`)
-            .then(res => res.json())
-            .then(timezone => {
-                // Získání času
-                fetch(`https://api1.aws.simrail.eu:8082/api/getTime?serverCode=${server.ServerCode}`)
-                    .then(res => res.json())
-                    .then(unixTime => {
-                        const date = new Date(Number(unixTime));
-                        // Formátování času
-                        const hours = date.getUTCHours() + Number(timezone);
-                        const minutes = date.getUTCMinutes();
-                        const seconds = date.getUTCSeconds();
-                        // Ošetření přetečení hodin
-                        const displayHours = ((hours % 24) + 24) % 24;
-                        const timeStr = `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                        const tzStr = `UTC${timezone >= 0 ? '+' : ''}${timezone}`;
-                        document.getElementById('server-time-box').innerHTML = `
-                            <span style="font-size:1.08em;color:#43b581;font-weight:bold;">${timeStr}</span>
-                            <span style="font-size:0.95em;color:#aaa;margin-left:6px;">(${tzStr})</span>
-                        `;
-                    })
-                    .catch(() => {
-                        document.getElementById('server-time-box').innerHTML = `<span style="color:#f04747;">Chyba času</span>`;
-                    });
-            })
-            .catch(() => {
-                document.getElementById('server-time-box').innerHTML = `<span style="color:#f04747;">Chyba zóny</span>`;
-            });
+    // Zobrazení aktuálního času podle regionu serveru
+    const regionTimezones = {
+        'Europe': 'Europe/Prague',
+        'Asia': 'Asia/Shanghai',
+        'America': 'America/New_York',
+        'Australia': 'Australia/Sydney',
+        'Africa': 'Africa/Johannesburg'
+    };
+    const tz = regionTimezones[server.ServerRegion] || 'Europe/Prague';
+
+    function updateLocalTime() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('cs-CZ', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: tz
+        });
+        document.getElementById('local-time-box').innerHTML = `
+            <span style="font-size:1.08em;color:#43b581;font-weight:bold;">${timeStr}</span>
+            <span style="font-size:0.95em;color:#aaa;margin-left:6px;">(${tz.replace('_', ' ')})</span>
+        `;
     }
-    updateServerTime();
-    serverTimeInterval = setInterval(updateServerTime, 5000);
+    updateLocalTime();
+    const localTimeInterval = setInterval(updateLocalTime, 5000);
 
     // Vyčistit interval při zavření modalu
     modal.addEventListener('transitionend', () => {
-        if (!modal.classList.contains('active') && serverTimeInterval) {
-            clearInterval(serverTimeInterval);
+        if (!modal.classList.contains('active') && localTimeInterval) {
+            clearInterval(localTimeInterval);
         }
     });
 
