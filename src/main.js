@@ -224,7 +224,13 @@ function showDiscordProfile(user) {
             })
           });
         };
-      }
+    console.log('Modal by měl být aktivní:', document.getElementById('work-modal').classList);
+  } else {
+    console.warn('profile-clickable nenalezen, event handler nenavázán!');
+  }
+}
+}
+
 // Funkce pro vykreslení tabulky zaměstnanců na stránce Přehled
 function renderEmployeesTable() {
   const tableBody = document.querySelector('#employees-table tbody');
@@ -250,10 +256,7 @@ function renderEmployeesTable() {
   });
 }
       console.log('Modal by měl být aktivní:', document.getElementById('work-modal').classList);
-    };
-  } else {
-    console.warn('profile-clickable nenalezen, event handler nenavázán!');
   }
-}
+
 
 setPage();
