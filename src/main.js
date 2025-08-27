@@ -120,7 +120,7 @@ function initializeEmployeesTable() {
 
     // HTML pro tabulku zaměstnanců a aktivitu vedle sebe
     const tableHtml = `
-        <div style="display:flex;gap:32px;align-items:flex-start;">
+        <div class="tables-flex-container">
             <div id="${tableContainerId}" class="employee-table-container">
                 <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
                 <table id="${tableId}" class="employee-table">
