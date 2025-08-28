@@ -463,32 +463,51 @@ async function showTrainDetailModal(user, train) {
         trainPosition = await fetchTrainPosition(train.ServerCode, train.id || train.TrainNoLocal);
     } catch {}
 
+    // Pomocná funkce pro výpočet vzdálenosti mezi dvěma GPS body (Haversine formula)
+    function getDistanceKm(lat1, lon1, lat2, lon2) {
+        const R = 6371; // km
+        const dLat = (lat2-lat1) * Math.PI/180;
+        const dLon = (lon2-lon1) * Math.PI/180;
+        const a =
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
     // Získání aktuální a následující stanice
     const stops = getCurrentAndNextStop(timetable);
 
-    // Aktuální čas (živě aktualizovaný)
-    let timeBoxId = 'train-detail-time-box-' + Math.floor(Math.random() * 100000);
-    function updateTrainDetailTime() {
+    // Vylepšená funkce pro výpočet zpoždění podle polohy
+    function calculateDelayWithPosition(stop, nextStopIdx) {
+        // Časové zpoždění (původní)
+        const timeStr = stop.departureTime || stop.arrivalTime;
+        if (!timeStr) return 0;
+        const planned = new Date(timeStr);
         const now = new Date();
-        const timeStr = now.toLocaleTimeString('cs-CZ', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        const el = document.getElementById(timeBoxId);
-        if (el) el.innerHTML = `<span class="train-detail-time-anim">${timeStr}</span>`;
-    }
+        let diffMin = Math.floor((now - planned) / 60000);
 
-    // Timeline SVG (malá oranžová osa)
-    const timelineSvg = `
-        <svg width="32" height="80" viewBox="0 0 32 80" style="margin-right:12px;">
-            <circle cx="16" cy="12" r="8" fill="#ffb300"/>
-            <rect x="14" y="20" width="4" height="20" fill="#ffb300"/>
-            <circle cx="16" cy="40" r="8" fill="#ffb300"/>
-            <rect x="14" y="48" width="4" height="20" fill="#ffb300"/>
-            <circle cx="16" cy="68" r="8" fill="#ffb300"/>
-        </svg>
-    `;
+        // Pokud máme pozici vlaku a následující stanici, zkus vypočítat reálné zpoždění
+        if (trainPosition && stops[nextStopIdx]) {
+            const nextStop = stops[nextStopIdx];
+            // Pokud máme GPS souřadnice stanice (musíš je doplnit do dat, nebo použít mileage)
+            // Pokud máme mileage, použij rozdíl mileage
+            if (typeof nextStop.mileage === 'number' && typeof stop.mileage === 'number') {
+                const kmToGo = Math.abs(nextStop.mileage - stop.mileage);
+                const velocity = trainPosition.Velocity || 0;
+                if (velocity > 0) {
+                    const timeToGoMin = (kmToGo / velocity) * 60;
+                    const plannedArrival = new Date(nextStop.arrivalTime || nextStop.departureTime);
+                    const predictedArrival = new Date(now.getTime() + timeToGoMin * 60000);
+                    const realDelay = Math.floor((predictedArrival - plannedArrival) / 60000);
+                    // Pokud reálné zpoždění je větší než časové, použij reálné
+                    if (realDelay > diffMin) return realDelay;
+                }
+            }
+        }
+        return diffMin > 0 ? diffMin : 0;
+    }
 
     // Stanice HTML ve stylu SimRail UI
     let stationsHtml = '';
@@ -501,9 +520,9 @@ async function showTrainDetailModal(user, train) {
                         ${train.StartStation}
                     </div>
                     ${stops.map((stop, idx) => {
-                        const delay = calculateDelay(stop);
+                        const delay = calculateDelayWithPosition(stop, idx+1);
                         const delayHtml = delay > 0
-                            ? `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`
+                            ? `<span style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`
                             : `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
                         return `
                             <div style="font-size:1.08em;color:#ffe066;background:#23272a;padding:6px 12px;border-radius:8px;margin:6px 0;display:flex;align-items:center;box-shadow:0 2px 8px #23272a22;">
