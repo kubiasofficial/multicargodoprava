@@ -996,7 +996,7 @@ function initializeEmployeesTable() {
     const activityContainerId = 'activity-table-container';
     const activityTableId = 'activity-table';
 
-    // Upravené HTML pro tabulky pod sebou (full-width)
+    // Vylepšené HTML pro tabulky pod sebou (full-width, moderní styl)
     const tableHtml = `
         <div class="tables-vertical-container" style="display:block;width:100%;max-width:900px;margin:0 auto;">
             <div id="${tableContainerId}" class="employee-table-container" style="margin-bottom:32px;">
@@ -1010,13 +1010,19 @@ function initializeEmployeesTable() {
             </div>
             <div id="${activityContainerId}" class="activity-table-container">
                 <h2 style="color:#fff;text-align:center;">Aktivita</h2>
-                <table id="${activityTableId}" class="activity-table" style="width:100%;">
+                <table id="${activityTableId}" class="activity-table" style="width:100%;border-radius:12px;overflow:hidden;">
                     <thead>
-                        <tr><th>Zaměstnanec</th><th>Práce</th></tr>
+                        <tr style="background:#23272a;">
+                            <th style="padding:12px 0;">Avatar</th>
+                            <th style="padding:12px 0;">Zaměstnanec</th>
+                            <th style="padding:12px 0;">Vlak</th>
+                            <th style="padding:12px 0;">Trasa</th>
+                            <th style="padding:12px 0;">Čas</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="2" style="text-align:center;">Žádná aktivita zatím není.</td>
+                            <td colspan="5" style="text-align:center;">Žádná aktivita zatím není.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1079,16 +1085,36 @@ function initializeEmployeesTable() {
             const activityList = Object.values(activities);
             if (activityList.length > 0) {
                 activityList.forEach(act => {
+                    const avatarUrl = act.id
+                        ? `https://cdn.discordapp.com/avatars/${act.id}/${act.avatar || 'a_0'}.png`
+                        : '/Pictures/train_default.png';
                     const tr = document.createElement('tr');
+                    tr.style.background = '#23272a';
+                    tr.style.borderBottom = '1px solid #2c2f33';
                     tr.innerHTML = `
-                        <td>${act.username}</td>
-                        <td>${act.trainNo} ${act.trainName ? '(' + act.trainName + ')' : ''}</td>
+                        <td style="padding:10px 0;text-align:center;">
+                            <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
+                        </td>
+                        <td style="padding:10px 0;text-align:center;color:#fff;font-weight:bold;">
+                            ${act.username}
+                        </td>
+                        <td style="padding:10px 0;text-align:center;">
+                            <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
+                                ${act.trainNo}
+                            </span>
+                        </td>
+                        <td style="padding:10px 0;text-align:center;color:#aaa;">
+                            ${act.trainName ? act.trainName : ''}
+                        </td>
+                        <td style="padding:10px 0;text-align:center;color:#43b581;">
+                            ${act.time ? new Date(act.time).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                        </td>
                     `;
                     activityBody.appendChild(tr);
                 });
             } else {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan='2' style='text-align:center;'>Žádná aktivita zatím není.</td>`;
+                tr.innerHTML = `<td colspan='5' style='text-align:center;'>Žádná aktivita zatím není.</td>`;
                 activityBody.appendChild(tr);
             }
         });
