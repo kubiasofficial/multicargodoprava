@@ -284,13 +284,13 @@ function showProfileModal(user) {
     // Tlačítka příchod/odchod
     document.getElementById('profile-arrival').onclick = () => {
         db.ref('users/' + user.id).update({ working: true });
-        sendDiscordWebhook(`✅ ${user.username} přišel do služby`);
+        sendDiscordWebhookArrival(`✅ ${user.username} přišel do služby`);
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     };
     document.getElementById('profile-leave').onclick = () => {
         db.ref('users/' + user.id).update({ working: false });
-        sendDiscordWebhook(`❌ ${user.username} odešel ze služby`);
+        sendDiscordWebhookArrival(`❌ ${user.username} odešel ze služby`);
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
     };
@@ -352,8 +352,15 @@ function showDiscordProfile(user) {
     }
 }
 
-// Pomocná funkce pro odeslání zprávy na Discord webhook
-function sendDiscordWebhook(content) {
+// Pomocné funkce pro odeslání zprávy na Discord webhook
+function sendDiscordWebhookArrival(content) {
+    fetch("https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+    });
+}
+function sendDiscordWebhookTrain(content) {
     fetch("https://discordapp.com/api/webhooks/1410402512787472527/aIXjeKX6Oqb9el4KLDPDspXEmlqdkTrwwSUsXSMJgcbmHqKfqSveJo05FNmc18WwoevJ", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -576,7 +583,7 @@ async function showTrainDetailModal(user, train) {
 
     // Ukončení jízdy
     document.getElementById('end-ride-btn').onclick = () => {
-        sendDiscordWebhook(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
+        sendDiscordWebhookTrain(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
         removeActivity(user);
         modal.classList.remove('active');
         setTimeout(() => {
@@ -759,7 +766,7 @@ function showTrainsModal(server) {
                                         alert("Chyba uživatele.");
                                         return;
                                     }
-                                    sendDiscordWebhook(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
+                                    sendDiscordWebhookTrain(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
                                     saveActivity(userData, train);
                                     modal.classList.remove('active');
                                     setTimeout(() => modal.remove(), 300);
