@@ -526,6 +526,141 @@ async function showTrainDetailModal(user, train) {
         return diffMin > 0 ? diffMin : 0;
     }
 
+    const timelineSvg = `
+        <svg width="32" height="80" viewBox="0 0 32 80" style="margin-right:12px;">
+            <circle cx="16" cy="12" r="8" fill="#ffb300"/>
+            <rect x="14" y="20" width="4" height="20" fill="#ffb300"/>
+            <circle cx="16" cy="40" r="8" fill="#ffb300"/>
+            <rect x="14" y="48" width="4" height="20" fill="#ffb300"/>
+            <circle cx="16" cy="68" r="8" fill="#ffb300"/>
+        </svg>
+    `;
+
+    // Získání URL obrázku vlaku z pole Vehicles
+    const trainImgSrc = getVehicleImage(train.Vehicles);
+    
+    // Stanice HTML ve stylu SimRail UI
+    let stationsHtml = '';
+    if (stops.length > 0) {
+        stationsHtml = `
+            <div style="display:flex;align-items:flex-start;gap:18px;margin-top:18px;">
+                <div style="flex-shrink:0;">${timelineSvg}</div>
+                <div style="flex:1;">
+                    <div style="font-size:1.25em;font-weight:bold;color:#1e2a78;background:#ffe066;padding:4px 12px;border-radius:8px 8px 0 0;box-shadow:0 2px 8px #23272a33;">
+                        ${train.StartStation}
+                    </div>
+                    ${stops.map((stop, idx) => {
+                        const delay = calculateDelayWithPosition(stop, idx+1);
+                        const delayHtml = getDelayHtml(delay);
+                        return `
+                            <div style="font-size:1.08em;color:#ffe066;background:#23272a;padding:6px 12px;border-radius:8px;margin:6px 0;display:flex;align-items:center;box-shadow:0 2px 8px #23272a22;">
+                                <span style="font-style:italic;color:#ffe066;">${stop.nameForPerson}</span>
+                                <span style="margin-left:14px;color:#fff;">${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : ''}${stop.departureTime ? ' - ' + stop.departureTime.split(' ')[1] : ''}</span>
+                                ${delayHtml}
+                                ${stop.platform ? `<span style="margin-left:12px;color:#aaa;">Nást.: ${stop.platform}</span>` : ''}
+                                ${stop.track ? `<span style="margin-left:8px;color:#aaa;">Kolej: ${stop.track}</span>` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                    <div style="font-size:1.25em;font-weight:bold;color:#1e2a78;background:#ffe066;padding:4px 12px;border-radius:0 0 8px 8px;box-shadow:0 2px 8px #23272a33;">
+                        ${train.EndStation}
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        stationsHtml = `<div style="margin-top:18px;color:#aaa;">Jízdní řád není dostupný.</div>`;
+    }
+
+    // Modal HTML (SimRail styl + vlastní barvy)
+    modal.innerHTML = `
+        <div class="server-modal-content train-modal-simrail" style="max-width:600px;min-width:340px;position:relative;background:rgba(44,47,51,0.92);border-radius:18px;box-shadow:0 8px 32px #23272a99;padding:32px 28px;">
+            <span class="server-modal-close" id="train-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;">&times;</span>
+            <span id="train-modal-minimize" style="font-size:1.8em;top:18px;right:54px;position:absolute;cursor:pointer;color:#ffe066;" title="Minimalizovat">_</span>
+            <div style="display:flex;align-items:center;gap:22px;margin-bottom:18px;">
+                <img src="${trainImgSrc}" alt="Vlak" style="width:64px;height:64px;border-radius:12px;background:#222;box-shadow:0 2px 8px #23272a33;">
+                <div style="font-size:2.8em;font-weight:bold;color:#ffe066;background:#23272a;padding:12px 24px;border-radius:16px;box-shadow:0 2px 12px #23272a;">
+                    ${train.TrainNoLocal}
+                </div>
+                <div id="train-modal-time" style="font-size:1.25em;color:#43b581;font-weight:bold;margin-left:auto;"></div>
+            </div>
+            <div id="train-detail-content">
+                ${stationsHtml}
+                <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
+                    <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail" type="button">Ukončit jízdu</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    let minimized = false; // Proměnná pro stav modalu
+
+    setTimeout(() => {
+        modal.classList.add('active');
+        // Blikající animace pro zpoždění
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .delay-blink {
+                animation: blink-delay 1s infinite;
+            }
+            @keyframes blink-delay {
+                0% { opacity: 1; }
+                50% { opacity: 0.3; }
+                100% { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Funkce pro čas v modalu
+        function updateTrainDetailTime() {
+            const el = document.getElementById('train-modal-time');
+            if (el) {
+                const now = new Date();
+                el.textContent = now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        }
+        updateTrainDetailTime();
+        const interval = setInterval(updateTrainDetailTime, 1000);
+
+        // Oprav navázání eventů až po vykreslení DOM!
+        document.getElementById('train-modal-minimize').onclick = function () {
+            minimized = !minimized;
+            const content = document.getElementById('train-detail-content');
+            const modalContent = modal.querySelector('.server-modal-content');
+            if (minimized) {
+                content.style.display = 'none';
+                modalContent.style.width = '220px';
+                modalContent.style.minWidth = '220px';
+                modalContent.style.maxWidth = '220px';
+            } else {
+                content.style.display = '';
+                modalContent.style.width = '';
+                modalContent.style.minWidth = '';
+                modalContent.style.maxWidth = '';
+            }
+        };
+        document.getElementById('train-modal-close').onclick = function () {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                clearInterval(interval);
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+                if (style.parentNode) style.parentNode.removeChild(style);
+            }, 300);
+        };
+        document.getElementById('end-ride-btn').onclick = function () {
+            sendDiscordWebhookTrain(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
+            removeActivity(user);
+            modal.classList.remove('active');
+            setTimeout(() => {
+                clearInterval(interval);
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+                if (style.parentNode) style.parentNode.removeChild(style);
+            }, 300);
+        };
+    }, 20);
+}
+
     // Stanice HTML ve stylu SimRail UI
     let stationsHtml = '';
     if (stops.length > 0) {
@@ -644,7 +779,7 @@ async function showTrainDetailModal(user, train) {
             }, 300);
         };
     }, 20);
-}
+
 
 // Změna: kliknutí na vlakovou kartu otevře modal s "Převzít" a "Zavřít"
 function showTrainsModal(server) {
