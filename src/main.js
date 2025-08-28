@@ -766,10 +766,10 @@ function showTrainsModal(server) {
                 });
                 list.innerHTML += '</div>';
 
-                // Event handler pro kliknutí na vlakovou kartu
+                // Oprava: Event handler pro kliknutí na vlakovou kartu
                 setTimeout(() => {
                     document.querySelectorAll('.train-bubble-modern').forEach(card => {
-                        card.onclick = function () {
+                        card.addEventListener('click', function () {
                             const trainNo = card.getAttribute('data-train-no');
                             const train = trains.find(t => t.TrainNoLocal == trainNo);
                             if (!train) return;
@@ -806,8 +806,8 @@ function showTrainsModal(server) {
                                 setTimeout(() => modal.remove(), 300);
                             };
 
-                            // OPRAVA: handler musí být async, modal musí být odstraněn před otevřením detailu
-                            document.getElementById('take-train-btn').onclick = async function () {
+                            // Oprava: handler pro "Převzít" – navázání přes addEventListener
+                            document.getElementById('take-train-btn').addEventListener('click', async function () {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
@@ -832,10 +832,10 @@ function showTrainsModal(server) {
                                     if (document.body.contains(modal)) modal.remove();
                                     showTrainDetailModal(userData, train);
                                 }, 350);
-                            };
-                        };
+                            });
+                        });
                     });
-                }, 100); // ZVYŠ timeout na 100ms pro jistotu, aby DOM byl připraven
+                }, 100);
             }
 
             renderTrains();
@@ -856,12 +856,12 @@ function initializeEmployeesTable() {
     const activityContainerId = 'activity-table-container';
     const activityTableId = 'activity-table';
 
-    // HTML pro tabulku zaměstnanců a aktivitu vedle sebe
+    // Upravené HTML pro tabulky pod sebou (full-width)
     const tableHtml = `
-        <div class="tables-flex-container">
-            <div id="${tableContainerId}" class="employee-table-container">
+        <div class="tables-vertical-container" style="display:block;width:100%;max-width:900px;margin:0 auto;">
+            <div id="${tableContainerId}" class="employee-table-container" style="margin-bottom:32px;">
                 <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-                <table id="${tableId}" class="employee-table">
+                <table id="${tableId}" class="employee-table" style="width:100%;margin-bottom:0;">
                     <thead>
                         <tr><th>Avatar</th><th>Jméno</th><th>Role</th></tr>
                     </thead>
@@ -870,7 +870,7 @@ function initializeEmployeesTable() {
             </div>
             <div id="${activityContainerId}" class="activity-table-container">
                 <h2 style="color:#fff;text-align:center;">Aktivita</h2>
-                <table id="${activityTableId}" class="activity-table">
+                <table id="${activityTableId}" class="activity-table" style="width:100%;">
                     <thead>
                         <tr><th>Zaměstnanec</th><th>Práce</th></tr>
                     </thead>
