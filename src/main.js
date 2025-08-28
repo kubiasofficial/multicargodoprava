@@ -444,8 +444,15 @@ async function showTrainDetailModal(user, train) {
     let timetable = [];
     try {
         const timetableData = await fetchTrainTimetable(train.ServerCode, train.TrainNoLocal);
-        if (Array.isArray(timetableData) && timetableData.length > 0 && timetableData[0].timetable) {
-            timetable = timetableData[0].timetable;
+        if (Array.isArray(timetableData) && timetableData.length > 0) {
+            // Najdi správný vlak podle čísla vlaku
+            let timetableObj = timetableData.find(obj => obj.trainNoLocal == train.TrainNoLocal);
+            if (!timetableObj && timetableData.length === 1) {
+                timetableObj = timetableData[0];
+            }
+            if (timetableObj && Array.isArray(timetableObj.timetable)) {
+                timetable = timetableObj.timetable;
+            }
         }
     } catch {}
 
