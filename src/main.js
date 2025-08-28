@@ -753,25 +753,27 @@ function showTrainsModal(server) {
                                 setTimeout(() => modal.remove(), 300);
                             };
 
-                            // Oprava: handler musí být async, ale ne await před showTrainDetailModal
-                            document.getElementById('take-train-btn').onclick = () => {
+                            // Oprava: handler musí být async a musí čekat na showTrainDetailModal
+                            document.getElementById('take-train-btn').onclick = async () => {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
                                 }
-                                db.ref('users/' + user.id).once('value').then(snap => {
-                                    const userData = snap.val();
-                                    if (!userData) {
-                                        alert("Chyba uživatele.");
-                                        return;
-                                    }
-                                    sendDiscordWebhookTrain(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
-                                    saveActivity(userData, train);
-                                    modal.classList.remove('active');
-                                    setTimeout(() => modal.remove(), 300);
+                                const snap = await db.ref('users/' + user.id).once('value');
+                                const userData = snap.val();
+                                if (!userData) {
+                                    alert("Chyba uživatele.");
+                                    return;
+                                }
+                                sendDiscordWebhookTrain(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
+                                saveActivity(userData, train);
+                                modal.classList.remove('active');
+                                setTimeout(() => modal.remove(), 300);
+                                // Počkej na vykreslení detailu vlaku
+                                setTimeout(() => {
                                     showTrainDetailModal(userData, train);
-                                });
+                                }, 350);
                             };
                         };
                     });
