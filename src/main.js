@@ -698,14 +698,14 @@ function showTrainsModal(server) {
                             };
 
                             document.getElementById('take-train-btn').onclick = () => {
-                                // Získání uživatele z Firebase
-                                const user = firebase.auth().currentUser;
-                                if (!user) {
+                                // Získání uživatele z Discord OAuth2
+                                const user = window.discordUser;
+                                if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
                                 }
                                 // Získání dat uživatele z DB
-                                db.ref('users/' + user.uid).once('value').then(snap => {
+                                db.ref('users/' + user.id).once('value').then(snap => {
                                     const userData = snap.val();
                                     if (!userData) {
                                         alert("Chyba uživatele.");
