@@ -965,24 +965,12 @@ function showTrainsModal(server) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
                                 }
-                                let userData;
-                                try {
-                                    const snap = await db.ref('users/' + user.id).once('value');
-                                    userData = snap.val();
-                                } catch (err) {
-                                    alert("Chyba uživatele.");
-                                    return;
-                                }
-                                if (!userData) {
-                                    alert("Chyba uživatele.");
-                                    return;
-                                }
-                                sendDiscordWebhookTrain(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
-                                saveActivity(userData, train); // Tím se uživatel objeví v tabulce Aktivita
+                                sendDiscordWebhookTrain(`✅ ${user.username} převzal vlak ${train.TrainNoLocal}`);
+                                saveActivity(user, train); // Tím se uživatel objeví v tabulce Aktivita
                                 modal.classList.remove('active');
                                 setTimeout(() => {
                                     if (document.body.contains(modal)) modal.remove();
-                                    showTrainDetailModal(userData, train);
+                                    showTrainDetailModal(user, train);
                                 }, 350);
                             }
                         });
@@ -1237,6 +1225,18 @@ function getVehicleImage(vehicles) {
     // Defaultní obrázek
     return '/Pictures/train_default.png';
 }
+
+// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
+function getDelayHtml(delay) {
+    if (delay > 0) {
+        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
+    } else {
+        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
+    }
+}
+    // Defaultní obrázek
+    return '/Pictures/train_default.png';
+
 
 // Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
 function getDelayHtml(delay) {
