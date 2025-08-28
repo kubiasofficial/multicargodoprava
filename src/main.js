@@ -444,110 +444,89 @@ async function showTrainDetailModal(user, train) {
         }
     } catch {}
 
+    // Načtení pozice vlaku
+    let trainPosition = null;
+    try {
+        trainPosition = await fetchTrainPosition(train.ServerCode, train.id || train.TrainNoLocal);
+    } catch {}
+
     // Získání aktuální a následující stanice
     const stops = getCurrentAndNextStop(timetable);
 
-    // Jízdní řád HTML (jen aktuální + následující stanice, design webu)
-    let timetableHtml = '';
+    // Aktuální čas (živě aktualizovaný)
+    let timeBoxId = 'train-detail-time-box-' + Math.floor(Math.random() * 100000);
+    function updateTrainDetailTime() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('cs-CZ', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        const el = document.getElementById(timeBoxId);
+        if (el) el.innerHTML = `<span class="train-detail-time-anim">${timeStr}</span>`;
+    }
+
+    // Stanice HTML s animací
+    let stationsHtml = '';
     if (stops.length > 0) {
-        timetableHtml = `
-            <div style="margin-top:18px;">
-                <div style="font-weight:bold;color:#fff;margin-bottom:8px;">Jízdní řád:</div>
-                <div style="display:flex;flex-direction:column;gap:12px;">
-                    ${stops.map((stop, idx) => {
-                        // Spočítané zpoždění
-                        const delay = calculateDelay(stop);
-                        const delayHtml = delay > 0
-                            ? `<span style="color:#f04747;font-weight:bold;">+${delay} min</span>`
-                            : '';
-                        return `
-                            <div style="background:rgba(44,47,51,0.85);border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.18);padding:14px 18px;display:flex;flex-direction:column;">
-                                <span style="font-size:1.18em;font-weight:bold;color:${idx === 0 ? '#43b581' : '#ffe066'};">
-                                    ${idx === 0 ? 'Aktuální stanice:' : 'Následující stanice:'} ${stop.nameForPerson}
-                                </span>
-                                <span style="color:#fff;">
-                                    ${stop.arrivalTime ? `Příjezd: <b>${stop.arrivalTime.split(' ')[1]}</b>` : ''}
-                                    ${stop.departureTime ? `Odjezd: <b>${stop.departureTime.split(' ')[1]}</b>` : ''}
-                                    ${delayHtml ? ` ${delayHtml}` : ''}
-                                </span>
-                                <span style="color:#aaa;font-size:0.98em;">
-                                    ${stop.platform ? `Nástupiště: ${stop.platform}` : ''} ${stop.track ? `Kolej: ${stop.track}` : ''}
-                                </span>
+        stationsHtml = `
+            <div class="train-detail-stations-anim" style="display:flex;flex-direction:column;gap:18px;margin-top:18px;">
+                ${stops.map((stop, idx) => {
+                    const delay = calculateDelay(stop);
+                    const delayHtml = delay > 0
+                        ? `<span style="color:#f04747;font-weight:bold;">+${delay} min</span>`
+                        : `<span style="color:#43b581;font-weight:bold;">Včas</span>`;
+                    return `
+                        <div class="train-detail-station-card slide-in" style="background:rgba(44,47,51,0.92);border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.18);padding:14px 18px;">
+                            <div style="font-size:1.18em;font-weight:bold;color:${idx === 0 ? '#43b581' : '#ffe066'};">
+                                ${idx === 0 ? 'Aktuální stanice:' : 'Následující stanice:'} ${stop.nameForPerson}
                             </div>
-                        `;
-                    }).join('')}
-                </div>
+                            <div style="color:#fff;">
+                                ${stop.arrivalTime ? `Příjezd: <b>${stop.arrivalTime.split(' ')[1]}</b>` : ''}
+                                ${stop.departureTime ? `Odjezd: <b>${stop.departureTime.split(' ')[1]}</b>` : ''}
+                                ${delayHtml ? ` ${delayHtml}` : ''}
+                            </div>
+                            <div style="color:#aaa;font-size:0.98em;">
+                                ${stop.platform ? `Nástupiště: ${stop.platform}` : ''} ${stop.track ? `Kolej: ${stop.track}` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
             </div>
         `;
     } else {
-        timetableHtml = `<div style="margin-top:18px;color:#aaa;">Jízdní řád není dostupný.</div>`;
+        stationsHtml = `<div style="margin-top:18px;color:#aaa;">Jízdní řád není dostupný.</div>`;
     }
 
-    // Pozice vlaku HTML
-    let positionHtml = '';
-    if (trainPosition) {
-        positionHtml = `
-            <div style="margin-top:18px;">
-                <span style="font-weight:bold;color:#fff;">Aktuální pozice:</span>
-                <span style="color:#ffe066;">${trainPosition.Latitude.toFixed(5)}, ${trainPosition.Longitude.toFixed(5)}</span>
-                <span style="color:#43b581;margin-left:12px;">Rychlost: ${trainPosition.Velocity} km/h</span>
-            </div>
-        `;
-    }
-
+    // Modal HTML
     modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:620px;min-width:340px;position:relative;">
+        <div class="server-modal-content" style="max-width:540px;min-width:340px;position:relative;">
             <span class="server-modal-close">&times;</span>
-            <span id="train-modal-minimize" style="position:absolute;top:18px;left:24px;font-size:2.2rem;cursor:pointer;color:#fff;">&#8211;</span>
-            <div id="train-modal-body">
-                <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px;">
-                    <img src="${getVehicleImage(train.Vehicles)}" alt="Vlak" style="width:72px;height:72px;border-radius:50%;background:#222;">
-                    <div>
-                        <div style="font-size:1.3em;font-weight:bold;color:#ffe066;">${train.TrainNoLocal}</div>
-                        <div style="font-size:1.1em;font-weight:bold;color:#fff;">${train.TrainName || ""}</div>
-                        <div style="font-size:1em;color:#43b581;">${train.StartStation} → ${train.EndStation}</div>
-                    </div>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <span style="font-weight:bold;color:#fff;">Stav:</span>
-                    <span style="color:#43b581;">${train.Type === 'player' ? 'Převzatý hráčem' : 'AI'}</span>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <span style="font-weight:bold;color:#fff;">Vozidla:</span>
-                    <span style="color:#aaa;">${train.Vehicles ? train.Vehicles.join(", ") : ""}</span>
-                </div>
-                <div style="margin-bottom:12px;">
-                    <span style="font-weight:bold;color:#fff;">Trasa:</span>
-                    <span style="color:#aaa;">${train.StartStation} → ${train.EndStation}</span>
-                </div>
-                ${timetableHtml}
-                <div style="display:flex;gap:16px;justify-content:center;margin-top:24px;">
-                    <button id="end-ride-btn" class="profile-btn profile-btn-red">Ukončit jízdu</button>
-                </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                <div style="font-size:1.6em;font-weight:bold;color:#ffe066;">${train.TrainNoLocal}</div>
+                <div id="${timeBoxId}" style="font-size:1.25em;color:#43b581;font-weight:bold;"></div>
             </div>
-            <div id="train-modal-minimized" style="display:none;text-align:center;padding:24px 0;">
-                <button id="train-modal-maximize" class="profile-btn profile-btn-green">Zvětšit okno vlaku</button>
+            <div style="font-size:1.15em;font-weight:bold;color:#fff;margin-bottom:8px;">
+                ${train.StartStation} <span style="color:#aaa;">→</span> ${train.EndStation}
+            </div>
+            ${stationsHtml}
+            <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
+                <button id="end-ride-btn" class="profile-btn profile-btn-red">Ukončit jízdu</button>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
 
-    setTimeout(() => { modal.classList.add('active'); }, 10);
+    setTimeout(() => { modal.classList.add('active'); updateTrainDetailTime(); }, 10);
+    const interval = setInterval(updateTrainDetailTime, 1000);
 
     // Zavření modalu
     modal.querySelector('.server-modal-close').onclick = () => {
         modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-
-    // Minimalizace
-    document.getElementById('train-modal-minimize').onclick = () => {
-        document.getElementById('train-modal-body').style.display = 'none';
-        document.getElementById('train-modal-minimized').style.display = 'block';
-    };
-    document.getElementById('train-modal-maximize').onclick = () => {
-        document.getElementById('train-modal-body').style.display = 'block';
-        document.getElementById('train-modal-minimized').style.display = 'none';
+        setTimeout(() => {
+            clearInterval(interval);
+            modal.remove();
+        }, 300);
     };
 
     // Ukončení jízdy
@@ -555,7 +534,10 @@ async function showTrainDetailModal(user, train) {
         sendDiscordWebhook(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
         removeActivity(user);
         modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
+        setTimeout(() => {
+            clearInterval(interval);
+            modal.remove();
+        }, 300);
     };
 }
 
@@ -996,6 +978,31 @@ function getVehicleImage(vehicles) {
     // Defaultní obrázek
     return '/Pictures/train_default.png';
 }
+
+// Při načtení stránky zkus obnovit Discord uživatele z localStorage
+if (!window.discordUser) {
+    try {
+        const userStr = localStorage.getItem('discord_user');
+        if (userStr) {
+            window.discordUser = JSON.parse(userStr);
+        }
+    } catch {}
+}
+        return '/Pictures/train_default.png';
+    
+    const v = vehicles[0];
+    // Přesné mapování na soubory v public\Pictures
+    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
+    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
+    if (v.includes('EN57')) return '/Pictures/en57-009.png';
+    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
+    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
+    if (v.includes('ET22')) return '/Pictures/et22-243.png';
+    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
+    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
+    // Defaultní obrázek
+    return '/Pictures/train_default.png';
+
 
 // Při načtení stránky zkus obnovit Discord uživatele z localStorage
 if (!window.discordUser) {
