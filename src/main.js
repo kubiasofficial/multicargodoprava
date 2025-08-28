@@ -1176,14 +1176,18 @@ function initializeEmployeesTable() {
         });
     }
 
+    // První načtení
     updateTable();
     updateActivityTable();
 
+    // Zruší předchozí interval pokud existuje
     if (employeesInterval) clearInterval(employeesInterval);
+
+    // Aktualizace každých 5 sekund
     employeesInterval = setInterval(() => {
         updateTable();
         updateActivityTable();
-    }, 30000);
+    }, 5000);
 }
 
 
@@ -1312,5 +1316,55 @@ function getDelayHtml(delay) {
         return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
     }
 }
+
+// Přidej globální styl pro tabulky a boxy
+(function addCustomTableStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .tables-vertical-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+        .employee-table-container, .activity-table-container {
+            background: rgba(44,47,51,0.92);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #23272a99;
+            padding: 32px 28px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .employee-table th, .activity-table th {
+            font-size: 1.1em;
+            color: #ffe066;
+            background: #23272a;
+            padding: 12px 0;
+        }
+        .employee-table td, .activity-table td {
+            font-size: 1em;
+            color: #fff;
+            padding: 10px 0;
+        }
+        .employee-table tr, .activity-table tr {
+            transition: background 0.2s;
+        }
+        .employee-table tr:hover, .activity-table tr:hover {
+            background: #2c2f33;
+        }
+        .employee-table, .activity-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .employee-table-container h2, .activity-table-container h2 {
+            font-size: 2em;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 18px;
+            font-weight: bold;
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 
