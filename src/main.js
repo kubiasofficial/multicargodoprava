@@ -960,15 +960,16 @@ function getVehicleImage(vehicles) {
     if (!Array.isArray(vehicles) || vehicles.length === 0) {
         return '/Pictures/train_default.png';
     }
-    // Zkus najít obrázek podle prvního vozidla
     const v = vehicles[0];
-    // Můžeš rozšířit podle typů vozidel, zde jednoduchý mapping
-    if (v.includes('EN57')) return '/Pictures/en57.png';
-    if (v.includes('ET22')) return '/Pictures/et22.png';
-    if (v.includes('EP07')) return '/Pictures/ep07.png';
-    if (v.includes('EU07')) return '/Pictures/eu07.png';
-    if (v.includes('SM42')) return '/Pictures/sm42.png';
-    if (v.includes('E186')) return '/Pictures/e186.png';
+    // Přesné mapování na soubory v public\Pictures
+    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
+    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
+    if (v.includes('EN57')) return '/Pictures/en57-009.png';
+    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
+    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
+    if (v.includes('ET22')) return '/Pictures/et22-243.png';
+    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
+    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
     // Defaultní obrázek
     return '/Pictures/train_default.png';
 }
