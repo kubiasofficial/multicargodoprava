@@ -753,15 +753,21 @@ function showTrainsModal(server) {
                                 setTimeout(() => modal.remove(), 300);
                             };
 
-                            // ZDE OPRAVA: handler musí být async, ale showTrainDetailModal musí být volán až po zavření modalu
+                            // OPRAVA: handler musí být async, modal musí být odstraněn před otevřením detailu
                             document.getElementById('take-train-btn').onclick = async function () {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
                                 }
-                                const snap = await db.ref('users/' + user.id).once('value');
-                                const userData = snap.val();
+                                let userData;
+                                try {
+                                    const snap = await db.ref('users/' + user.id).once('value');
+                                    userData = snap.val();
+                                } catch (e) {
+                                    alert("Chyba uživatele.");
+                                    return;
+                                }
                                 if (!userData) {
                                     alert("Chyba uživatele.");
                                     return;
@@ -770,13 +776,13 @@ function showTrainsModal(server) {
                                 saveActivity(userData, train);
                                 modal.classList.remove('active');
                                 setTimeout(() => {
-                                    modal.remove();
+                                    if (document.body.contains(modal)) modal.remove();
                                     showTrainDetailModal(userData, train);
-                                }, 300); // musíš zavolat showTrainDetailModal až po odstranění modalu
+                                }, 350);
                             };
                         };
                     });
-                }, 50);
+                }, 100); // ZVYŠ timeout na 100ms pro jistotu, aby DOM byl připraven
             }
 
             renderTrains();
