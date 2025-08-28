@@ -1089,7 +1089,7 @@ function initializeEmployeesTable() {
         db.ref('activity').once('value', snapshot => {
             const activities = snapshot.val() || {};
             activityBody.innerHTML = '';
-            // Oprava: použij Object.entries, aby se zachovala ID uživatelů
+            // Oprava: kontrola existence tbody před použitím tr.querySelector
             const activityList = Object.entries(activities);
             if (activityList.length > 0) {
                 activityList.forEach(([userId, act]) => {
@@ -1100,9 +1100,37 @@ function initializeEmployeesTable() {
                     const trainImg = getVehicleImage([act.trainNo]);
                     let delayHtml = '';
                     let currentStation = '';
+                    const tr = document.createElement('tr');
+                    tr.style.background = '#23272a';
+                    tr.style.borderBottom = '1px solid #2c2f33';
+                    tr.innerHTML = `
+                        <td style="padding:10px 0;text-align:center;">
+                            <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
+                        </td>
+                        <td style="padding:10px 0;text-align:center;color:#fff;font-weight:bold;">
+                            ${act.username || userId}
+                        </td>
+                        <td style="padding:10px 0;text-align:center;">
+                            <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                                <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:#222;display:flex;align-items:center;justify-content:center;">
+                                    <img src="${trainImg}" alt="Vlak" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
+                                </div>
+                                <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
+                                    ${act.trainNo || ''}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="activity-station-cell" style="padding:10px 0;text-align:center;color:#43b581;font-weight:bold;">
+                            ${currentStation}
+                        </td>
+                        <td class="activity-delay-cell" style="padding:10px 0;text-align:center;">
+                            ${delayHtml}
+                        </td>
+                    `;
+                    activityBody.appendChild(tr);
+
+                    // Oprava: fetch až po appendChild, pak kontrola existence buněk
                     if (act.trainNo) {
-                        delayHtml = '<span style="color:#aaa;">Načítám...</span>';
-                        currentStation = '<span style="color:#aaa;">Načítám...</span>';
                         fetch(`/api/simrail-timetable?train=${act.trainNo}`)
                             .then(res => res.json())
                             .then(data => {
@@ -1137,42 +1165,23 @@ function initializeEmployeesTable() {
                                         }
                                     }
                                 }
-                                tr.querySelector('.activity-delay-cell').innerHTML = delayHtml;
-                                tr.querySelector('.activity-station-cell').innerHTML = stationName ? `<span style="color:#43b581;font-weight:bold;">${stationName}</span>` : '<span style="color:#aaa;">N/A</span>';
+                                // Oprava: kontrola existence buněk před nastavením innerHTML
+                                const stationCell = tr.querySelector('.activity-station-cell');
+                                const delayCell = tr.querySelector('.activity-delay-cell');
+                                if (stationCell) {
+                                    stationCell.innerHTML = stationName ? `<span style="color:#43b581;font-weight:bold;">${stationName}</span>` : '<span style="color:#aaa;">N/A</span>';
+                                }
+                                if (delayCell) {
+                                    delayCell.innerHTML = delayHtml;
+                                }
                             })
                             .catch(() => {
-                                tr.querySelector('.activity-delay-cell').innerHTML = '<span style="color:#aaa;">N/A</span>';
-                                tr.querySelector('.activity-station-cell').innerHTML = '<span style="color:#aaa;">N/A</span>';
+                                const stationCell = tr.querySelector('.activity-station-cell');
+                                const delayCell = tr.querySelector('.activity-delay-cell');
+                                if (stationCell) stationCell.innerHTML = '<span style="color:#aaa;">N/A</span>';
+                                if (delayCell) delayCell.innerHTML = '<span style="color:#aaa;">N/A</span>';
                             });
                     }
-                    const tr = document.createElement('tr');
-                    tr.style.background = '#23272a';
-                    tr.style.borderBottom = '1px solid #2c2f33';
-                    tr.innerHTML = `
-                        <td style="padding:10px 0;text-align:center;">
-                            <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
-                        </td>
-                        <td style="padding:10px 0;text-align:center;color:#fff;font-weight:bold;">
-                            ${act.username || userId}
-                        </td>
-                        <td style="padding:10px 0;text-align:center;">
-                            <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                                <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:#222;display:flex;align-items:center;justify-content:center;">
-                                    <img src="${trainImg}" alt="Vlak" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
-                                </div>
-                                <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
-                                    ${act.trainNo || ''}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="activity-station-cell" style="padding:10px 0;text-align:center;color:#43b581;font-weight:bold;">
-                            ${currentStation}
-                        </td>
-                        <td class="activity-delay-cell" style="padding:10px 0;text-align:center;">
-                            ${delayHtml}
-                        </td>
-                    `;
-                    activityBody.appendChild(tr);
                 });
             } else {
                 const tr = document.createElement('tr');
