@@ -700,6 +700,7 @@ function showTrainsModal(server) {
                             document.getElementById('take-train-btn').onclick = () => {
                                 // Získání uživatele z Discord OAuth2
                                 const user = window.discordUser;
+                                console.log('Převzetí vlaku, Discord user:', user); // Debug log
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
