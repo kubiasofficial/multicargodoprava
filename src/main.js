@@ -988,21 +988,6 @@ if (!window.discordUser) {
         }
     } catch {}
 }
-        return '/Pictures/train_default.png';
-    
-    const v = vehicles[0];
-    // Přesné mapování na soubory v public\Pictures
-    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
-    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
-    if (v.includes('EN57')) return '/Pictures/en57-009.png';
-    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
-    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
-    if (v.includes('ET22')) return '/Pictures/et22-243.png';
-    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
-    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
-    // Defaultní obrázek
-    return '/Pictures/train_default.png';
-
 
 // Při načtení stránky zkus obnovit Discord uživatele z localStorage
 if (!window.discordUser) {
