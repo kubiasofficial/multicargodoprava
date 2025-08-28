@@ -975,7 +975,7 @@ function showTrainsModal(server) {
                             if (e.target.id === 'take-train-btn') {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
-                                    alert("Musíš být přihlášený přes Discord!");
+                                    alert("Musíš být prostě přihlášený přes Discord!");
                                     return;
                                 }
                                 sendDiscordWebhookTrain(`✅ ${user.username} převzal vlak ${train.TrainNoLocal}`);
