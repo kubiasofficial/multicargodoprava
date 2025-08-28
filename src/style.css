@@ -312,19 +312,6 @@ body {
   position: relative;
 }
 
-/* Tabulka Zaměstnanci - zarovnání vlevo */
-/* #employees-table-container { */
-/*  width: 100%; */
-/*  max-width: 500px; */
-/*  margin: 0 0 0 24px; */
-/*  background: rgba(44,47,51,0.85); */
-/*  border-radius: 12px; */
-/*  box-shadow: 0 2px 12px rgba(0,0,0,0.18); */
-/*  padding: 16px; */
-/*  z-index: 10; */
-/*  position: static; */
-/* } */
-
 /* Tabulka Aktivita - zarovnání vpravo */
 .activity-table-container {
   width: 100%;
