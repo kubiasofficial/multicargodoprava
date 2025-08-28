@@ -1084,7 +1084,7 @@ function initializeEmployeesTable() {
         });
     }
 
-    // Aktivita - avatar + vlak v bublince + spoždění místo času
+    // Aktivita - avatar + vlak v bublince + aktuální stanice místo trasy + spoždění
     function updateActivityTable() {
         db.ref('activity').once('value', snapshot => {
             const activities = snapshot.val() || {};
@@ -1095,12 +1095,12 @@ function initializeEmployeesTable() {
                     const avatarUrl = act.id
                         ? `https://cdn.discordapp.com/avatars/${act.id}/${act.avatar || 'a_0'}.png`
                         : '/Pictures/train_default.png';
-                    // Vlaková bublinka
                     const trainImg = getVehicleImage([act.trainNo]);
-                    // Spočítej zpoždění (pokud je trainNo dostupné)
                     let delayHtml = '';
+                    let currentStation = '';
                     if (act.trainNo) {
                         delayHtml = '<span style="color:#aaa;">Načítám...</span>';
+                        currentStation = '<span style="color:#aaa;">Načítám...</span>';
                         fetch(`/api/simrail-timetable?train=${act.trainNo}`)
                             .then(res => res.json())
                             .then(data => {
@@ -1108,6 +1108,7 @@ function initializeEmployeesTable() {
                                 let timetable = timetableObj && Array.isArray(timetableObj.timetable) ? timetableObj.timetable : [];
                                 let stops = timetable;
                                 let delay = 0;
+                                let stationName = '';
                                 if (Array.isArray(stops) && stops.length > 0) {
                                     const now = new Date();
                                     let currentIdx = -1;
@@ -1125,6 +1126,7 @@ function initializeEmployeesTable() {
                                     if (currentIdx < 0) currentIdx = 0;
                                     const stop = stops[currentIdx];
                                     if (stop) {
+                                        stationName = stop.nameForPerson || stop.stationName || stop.name || '';
                                         const timeStr = stop.departureTime || stop.arrivalTime;
                                         if (timeStr) {
                                             const planned = new Date(timeStr);
@@ -1134,9 +1136,11 @@ function initializeEmployeesTable() {
                                     }
                                 }
                                 tr.querySelector('.activity-delay-cell').innerHTML = delayHtml;
+                                tr.querySelector('.activity-station-cell').innerHTML = stationName ? `<span style="color:#43b581;font-weight:bold;">${stationName}</span>` : '<span style="color:#aaa;">N/A</span>';
                             })
                             .catch(() => {
                                 tr.querySelector('.activity-delay-cell').innerHTML = '<span style="color:#aaa;">N/A</span>';
+                                tr.querySelector('.activity-station-cell').innerHTML = '<span style="color:#aaa;">N/A</span>';
                             });
                     }
                     const tr = document.createElement('tr');
@@ -1159,8 +1163,8 @@ function initializeEmployeesTable() {
                                 </span>
                             </div>
                         </td>
-                        <td style="padding:10px 0;text-align:center;color:#aaa;">
-                            ${act.trainName ? act.trainName : ''}
+                        <td class="activity-station-cell" style="padding:10px 0;text-align:center;color:#43b581;font-weight:bold;">
+                            ${currentStation}
                         </td>
                         <td class="activity-delay-cell" style="padding:10px 0;text-align:center;">
                             ${delayHtml}
