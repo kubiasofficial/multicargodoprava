@@ -779,47 +779,42 @@ function showTrainsModal(server) {
                 });
 
                 // Oprava: Event handler pro kliknutí na vlakovou kartu
-                setTimeout(() => {
-                    grid.querySelectorAll('.train-bubble-modern').forEach(card => {
-                        card.addEventListener('click', function () {
-                            const trainNo = card.getAttribute('data-train-no');
-                            const train = trains.find(t => t.TrainNoLocal == trainNo);
-                            if (!train) return;
+                grid.querySelectorAll('.train-bubble-modern').forEach(card => {
+                    card.addEventListener('click', function () {
+                        const trainNo = card.getAttribute('data-train-no');
+                        const train = trains.find(t => t.TrainNoLocal == trainNo);
+                        if (!train) return;
 
-                            // Modal pro převzetí vlaku
-                            let oldModal = document.getElementById('take-train-modal');
-                            if (oldModal) oldModal.remove();
-                            const modal = document.createElement('div');
-                            modal.id = 'take-train-modal';
-                            modal.className = 'server-modal';
-                            modal.innerHTML = `
-                                <div class="server-modal-content" style="max-width:400px;">
-                                    <span class="server-modal-close">&times;</span>
-                                    <h2 style="text-align:center;margin-bottom:18px;">Vlak ${train.TrainNoLocal}</h2>
-                                    <div style="text-align:center;margin-bottom:18px;">
-                                        <span style="font-size:1.1em;color:#fff;">${train.StartStation} → ${train.EndStation}</span>
-                                    </div>
-                                    <div style="display:flex;gap:16px;justify-content:center;">
-                                        <button id="take-train-btn" class="profile-btn profile-btn-green">Převzít</button>
-                                        <button id="close-train-btn" class="profile-btn profile-btn-red">Zavřít</button>
-                                    </div>
+                        // Modal pro převzetí vlaku
+                        let oldModal = document.getElementById('take-train-modal');
+                        if (oldModal) oldModal.remove();
+                        const modal = document.createElement('div');
+                        modal.id = 'take-train-modal';
+                        modal.className = 'server-modal';
+                        modal.innerHTML = `
+                            <div class="server-modal-content" style="max-width:400px;">
+                                <span class="server-modal-close">&times;</span>
+                                <h2 style="text-align:center;margin-bottom:18px;">Vlak ${train.TrainNoLocal}</h2>
+                                <div style="text-align:center;margin-bottom:18px;">
+                                    <span style="font-size:1.1em;color:#fff;">${train.StartStation} → ${train.EndStation}</span>
                                 </div>
-                            `;
-                            document.body.appendChild(modal);
+                                <div style="display:flex;gap:16px;justify-content:center;">
+                                    <button id="take-train-btn" class="profile-btn profile-btn-green">Převzít</button>
+                                    <button id="close-train-btn" class="profile-btn profile-btn-red">Zavřít</button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
 
-                            setTimeout(() => { modal.classList.add('active'); }, 10);
+                        setTimeout(() => { modal.classList.add('active'); }, 10);
 
-                            modal.querySelector('.server-modal-close').onclick = () => {
+                        // Delegace: navážeme eventy na modal, ne přímo na tlačítka
+                        modal.addEventListener('click', async function (e) {
+                            if (e.target.id === 'close-train-btn' || e.target.classList.contains('server-modal-close')) {
                                 modal.classList.remove('active');
                                 setTimeout(() => modal.remove(), 300);
-                            };
-                            document.getElementById('close-train-btn').onclick = () => {
-                                modal.classList.remove('active');
-                                setTimeout(() => modal.remove(), 300);
-                            };
-
-                            // Oprava: handler pro "Převzít" – navázání přes addEventListener
-                            document.getElementById('take-train-btn').addEventListener('click', async function () {
+                            }
+                            if (e.target.id === 'take-train-btn') {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
@@ -829,7 +824,7 @@ function showTrainsModal(server) {
                                 try {
                                     const snap = await db.ref('users/' + user.id).once('value');
                                     userData = snap.val();
-                                } catch (e) {
+                                } catch (err) {
                                     alert("Chyba uživatele.");
                                     return;
                                 }
@@ -844,10 +839,10 @@ function showTrainsModal(server) {
                                     if (document.body.contains(modal)) modal.remove();
                                     showTrainDetailModal(userData, train);
                                 }, 350);
-                            });
+                            }
                         });
                     });
-                }, 100);
+                });
             }
 
             renderTrains();
@@ -1106,14 +1101,6 @@ function getDelayHtml(delay) {
         return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
     }
 }
-
-// Oprava: Odstraň duplicitní definici funkce showTrainDetailModal.
-// V souboru byla dvakrát, což způsobuje chybu při deployi.
-// Zachovej pouze jednu definici showTrainDetailModal (tu poslední, která obsahuje animaci a správné event handlery).
-
-// Oprava: Pokud máš dvě definice initializeEmployeesTable, ponech pouze jednu (tu poslední, která je kompletní).
-
-// Oprava: Pokud máš dvě definice getDelayHtml, ponech pouze jednu (tu globální).
 
 // Při načtení stránky zkus obnovit Discord uživatele z localStorage
 if (!window.discordUser) {
