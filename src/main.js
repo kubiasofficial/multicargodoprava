@@ -709,7 +709,7 @@ function showTrainsModal(server) {
                 // Event handler pro kliknutí na vlakovou kartu
                 setTimeout(() => {
                     document.querySelectorAll('.train-bubble-modern').forEach(card => {
-                        card.onclick = async () => {
+                        card.onclick = function () {
                             const trainNo = card.getAttribute('data-train-no');
                             const train = trains.find(t => t.TrainNoLocal == trainNo);
                             if (!train) return;
@@ -746,13 +746,14 @@ function showTrainsModal(server) {
                                 setTimeout(() => modal.remove(), 300);
                             };
 
-                            document.getElementById('take-train-btn').onclick = async () => {
+                            // Oprava: handler musí být async, ale ne await před showTrainDetailModal
+                            document.getElementById('take-train-btn').onclick = () => {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
                                 }
-                                db.ref('users/' + user.id).once('value').then(async snap => {
+                                db.ref('users/' + user.id).once('value').then(snap => {
                                     const userData = snap.val();
                                     if (!userData) {
                                         alert("Chyba uživatele.");
@@ -760,9 +761,9 @@ function showTrainsModal(server) {
                                     }
                                     sendDiscordWebhook(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
                                     saveActivity(userData, train);
-                                    await showTrainDetailModal(userData, train); // musí být await!
                                     modal.classList.remove('active');
                                     setTimeout(() => modal.remove(), 300);
+                                    showTrainDetailModal(userData, train);
                                 });
                             };
                         };
