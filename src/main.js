@@ -437,7 +437,6 @@ function calculateDelay(stop) {
     return diffMin > 0 ? diffMin : 0;
 }
 
-// Globálně definuj timelineSvg (před funkcí showTrainDetailModal)
 const timelineSvg = `
     <svg width="32" height="80" viewBox="0 0 32 80" style="margin-right:12px;">
         <circle cx="16" cy="12" r="8" fill="#ffb300"/>
