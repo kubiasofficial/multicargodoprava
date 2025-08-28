@@ -1096,7 +1096,7 @@ function initializeEmployeesTable() {
                     // Oprava: pokud některé pole chybí, použij fallback
                     const avatarUrl = act.id
                         ? `https://cdn.discordapp.com/avatars/${act.id}/${act.avatar || 'a_0'}.png`
-                        : '/Pictures/train_default.png';
+                        : '/Pictures/train_default.jpg';
                     const trainImg = getVehicleImage([act.trainNo]);
                     let delayHtml = '';
                     let currentStation = '';
