@@ -435,6 +435,11 @@ async function showTrainDetailModal(user, train) {
     let oldModal = document.getElementById('train-detail-modal');
     if (oldModal) oldModal.remove();
 
+    // Vytvoř modal
+    const modal = document.createElement('div');
+    modal.id = 'train-detail-modal';
+    modal.className = 'server-modal';
+
     // Načtení jízdního řádu
     let timetable = [];
     try {
@@ -628,7 +633,7 @@ function showTrainsModal(server) {
                 return;
             }
 
-            function renderTrains(filter = '') {
+            async function renderTrains(filter = '') {
                 let filtered = trains;
                 // Filtrovat pouze podle vyhledávání
                 if (filter) {
@@ -664,7 +669,7 @@ function showTrainsModal(server) {
                 // Event handler pro kliknutí na vlakovou kartu
                 setTimeout(() => {
                     document.querySelectorAll('.train-bubble-modern').forEach(card => {
-                        card.onclick = () => {
+                        card.onclick = async () => {
                             const trainNo = card.getAttribute('data-train-no');
                             const train = trains.find(t => t.TrainNoLocal == trainNo);
                             if (!train) return;
@@ -701,28 +706,21 @@ function showTrainsModal(server) {
                                 setTimeout(() => modal.remove(), 300);
                             };
 
-                            document.getElementById('take-train-btn').onclick = () => {
-                                // Získání uživatele z Discord OAuth2
+                            document.getElementById('take-train-btn').onclick = async () => {
                                 const user = window.discordUser;
-                                console.log('Převzetí vlaku, Discord user:', user); // Debug log
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
                                     return;
                                 }
-                                // Získání dat uživatele z DB
-                                db.ref('users/' + user.id).once('value').then(snap => {
+                                db.ref('users/' + user.id).once('value').then(async snap => {
                                     const userData = snap.val();
                                     if (!userData) {
                                         alert("Chyba uživatele.");
                                         return;
                                     }
-                                    // Odeslat webhook
                                     sendDiscordWebhook(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
-                                    // Uložit aktivitu
                                     saveActivity(userData, train);
-                                    // Zobrazit detailní modal vlaku
-                                    showTrainDetailModal(userData, train);
-                                    // Zavřít modal převzetí
+                                    await showTrainDetailModal(userData, train);
                                     modal.classList.remove('active');
                                     setTimeout(() => modal.remove(), 300);
                                 });
@@ -988,6 +986,7 @@ if (!window.discordUser) {
         }
     } catch {}
 }
+
 
 // Při načtení stránky zkus obnovit Discord uživatele z localStorage
 if (!window.discordUser) {
