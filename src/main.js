@@ -14,6 +14,7 @@ const db = firebase.database();
 // Firebase Authentication
 if (!firebase.auth) {
     alert('Chybí Firebase Auth SDK! Přidejte <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> do index.html.');
+}
 const auth = firebase.auth();
 
 // DOM elementy
@@ -1161,7 +1162,6 @@ document.addEventListener('click', function (e) {
         showServerModal();
     }
 });
-}
 
 // Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
 function getVehicleImage(vehicles) {
