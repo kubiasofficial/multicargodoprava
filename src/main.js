@@ -182,6 +182,13 @@ window.addEventListener('DOMContentLoaded', () => {
     if (hash && hash.includes('access_token')) {
         const params = new URLSearchParams(hash.substring(1));
         accessToken = params.get('access_token');
+        // Ulož accessToken do localStorage pro další načtení
+        localStorage.setItem('discord_access_token', accessToken);
+        // Odstraň hash z URL pro čistotu (bez reloadu)
+        window.location.hash = '';
+    } else {
+        // Zkus načíst accessToken z localStorage
+        accessToken = localStorage.getItem('discord_access_token');
     }
 
     if (accessToken) {
@@ -973,5 +980,15 @@ function getVehicleImage(vehicles) {
     if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
     // Defaultní obrázek
     return '/Pictures/train_default.png';
+}
+
+// Při načtení stránky zkus obnovit Discord uživatele z localStorage
+if (!window.discordUser) {
+    try {
+        const userStr = localStorage.getItem('discord_user');
+        if (userStr) {
+            window.discordUser = JSON.parse(userStr);
+        }
+    } catch {}
 }
 
