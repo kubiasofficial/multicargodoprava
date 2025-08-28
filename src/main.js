@@ -1085,16 +1085,16 @@ function getVehicleImage(vehicles) {
     return '/Pictures/train_default.png';
 }
 
-// Při načtení stránky zkus obnovit Discord uživatele z localStorage
-if (!window.discordUser) {
-    try {
-        const userStr = localStorage.getItem('discord_user');
-        if (userStr) {
-            window.discordUser = JSON.parse(userStr);
-        }
-    } catch {}
+// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
+function getDelayHtml(delay) {
+    if (delay > 0) {
+        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
+    } else {
+        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
+    }
 }
 
+// V showTrainDetailModal i jinde používej getDelayHtml(delay) místo lokální definice
 
 // Při načtení stránky zkus obnovit Discord uživatele z localStorage
 if (!window.discordUser) {
