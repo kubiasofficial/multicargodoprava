@@ -1,20 +1,4 @@
 #work-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0,0,0,0.7);
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  border: 4px solid #43b581;
-  box-shadow: 0 0 32px 8px #43b58199;
-  animation: modalFadeIn 0.3s;
-}
-
-#work-modal {
  display: none;
  position: fixed;
  top: 0;
