@@ -14,7 +14,6 @@ const db = firebase.database();
 // Firebase Authentication
 if (!firebase.auth) {
     alert('Chybí Firebase Auth SDK! Přidejte <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script> do index.html.');
-}
 const auth = firebase.auth();
 
 // DOM elementy
@@ -1075,95 +1074,84 @@ function showStationServerModal() {
         });
 }
 
-console.log('Multicargo Doprava - verze: 2024-06-09');
-
-// Spustit navigaci na výchozí stránku při načtení
-setPage('prehled');
-
-// Zajistí dostupnost funkce pro onclick v HTML
-window.showServerModal = showServerModal;
-
-// Oprava: tlačítko "Jízda" musí být klikatelné a musí fungovat správně.
-// 1. Zajistíme, že funkce showServerModal existuje a otevře modal vlaků.
-// 2. Opravíme navázání eventu na tlačítko "Jízda" (použijeme delegaci pro jistotu).
-
-function showServerModal() {
-    // Modal pro výběr serveru
-    let oldModal = document.getElementById('server-select-modal');
-    if (oldModal) oldModal.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'server-select-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:500px;">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru</h2>
-            <div id="servers-list" class="servers-list">
-                <div class="servers-loading">Načítám servery...</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-
-    // Oprava: status online/offline podle IsActive
-    fetch('https://panel.simrail.eu:8084/servers-open')
-        .then(res => res.json())
-        .then(data => {
-            const servers = Array.isArray(data.data) ? data.data : [];
-            const list = document.getElementById('servers-list');
-            if (servers.length === 0) {
-                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
-                return;
-            }
-            list.innerHTML = '';
-            servers.forEach(server => {
-                const isOnline = !!server.IsActive;
-                const statusColor = isOnline ? '#43b581' : '#f04747';
-                const statusText = isOnline ? 'Online' : 'Offline';
-                const div = document.createElement('div');
-                div.className = 'server-card';
-                div.innerHTML = `
-                    <div class="server-header">
-                        <span>${server.ServerName}</span>
-                        <span class="server-region">${server.ServerRegion}</span>
-                    </div>
-                    <div class="server-info">
-                        <span class="server-status" style="color:${statusColor};font-weight:bold;">
-                            ${statusText}
-                        </span>
-                    </div>
-                `;
-                if (isOnline) {
-                    div.style.cursor = 'pointer';
-                    div.onclick = () => {
-                        modal.classList.remove('active');
-                        setTimeout(() => modal.remove(), 300);
-                        showTrainsModal({
-                            ServerName: server.ServerName,
-                            ServerCode: server.ServerCode,
-                            ServerRegion: server.ServerRegion
-                        });
-                    };
-                } else {
-                    div.style.opacity = '0.6';
-                    div.style.cursor = 'not-allowed';
-                }
-                list.appendChild(div);
-            });
-        })
-        .catch(() => {
-            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
-        });
+// Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
+function getVehicleImage(vehicles) {
+    // Pokud není pole nebo je prázdné, vrať defaultní obrázek
+    if (!Array.isArray(vehicles) || vehicles.length === 0) {
+        return '/Pictures/train_default.png';
+    }
+    const v = vehicles[0];
+    // Přesné mapování na soubory v public\Pictures
+    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
+    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
+    if (v.includes('EN57')) return '/Pictures/en57-009.png';
+    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
+    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
+    if (v.includes('ET22')) return '/Pictures/et22-243.png';
+    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
+    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
+    // Defaultní obrázek
+    return '/Pictures/train_default.png';
 }
-window.showServerModal = showServerModal;
+
+// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
+function getDelayHtml(delay) {
+    if (delay > 0) {
+        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
+    } else {
+        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
+    }
+}
+
+// Přidej globální styl pro tabulky a boxy
+(function addCustomTableStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .tables-vertical-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+        .employee-table-container, .activity-table-container {
+            background: rgba(44,47,51,0.92);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #23272a99;
+            padding: 32px 28px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .employee-table th, .activity-table th {
+            font-size: 1.1em;
+            color: #ffe066;
+            background: #23272a;
+            padding: 12px 0;
+        }
+        .employee-table td, .activity-table td {
+            font-size: 1em;
+            color: #fff;
+            padding: 10px 0;
+        }
+        .employee-table tr, .activity-table tr {
+            transition: background 0.2s;
+        }
+        .employee-table tr:hover, .activity-table tr:hover {
+            background: #2c2f33;
+        }
+        .employee-table, .activity-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .employee-table-container h2, .activity-table-container h2 {
+            font-size: 2em;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 18px;
+            font-weight: bold;
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 // Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
 document.addEventListener('click', function (e) {
@@ -1173,6 +1161,7 @@ document.addEventListener('click', function (e) {
         showServerModal();
     }
 });
+}
 
 // Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
 function getVehicleImage(vehicles) {
@@ -1252,61 +1241,6 @@ function getDelayHtml(delay) {
     `;
     document.head.appendChild(style);
 })();
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    
-
-    // Oprava: status online/offline podle IsActive
-    fetch('https://panel.simrail.eu:8084/servers-open')
-        .then(res => res.json())
-        .then(data => {
-            const servers = Array.isArray(data.data) ? data.data : [];
-            const list = document.getElementById('servers-list');
-            if (servers.length === 0) {
-                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
-                return;
-            }
-            list.innerHTML = '';
-            servers.forEach(server => {
-                const isOnline = !!server.IsActive;
-                const statusColor = isOnline ? '#43b581' : '#f04747';
-                const statusText = isOnline ? 'Online' : 'Offline';
-                const div = document.createElement('div');
-                div.className = 'server-card';
-                div.innerHTML = `
-                    <div class="server-header">
-                        <span>${server.ServerName}</span>
-                        <span class="server-region">${server.ServerRegion}</span>
-                    </div>
-                    <div class="server-info">
-                        <span class="server-status" style="color:${statusColor};font-weight:bold;">
-                            ${statusText}
-                        </span>
-                    </div>
-                `;
-                if (isOnline) {
-                    div.style.cursor = 'pointer';
-                    div.onclick = () => {
-                        modal.classList.remove('active');
-                        setTimeout(() => modal.remove(), 300);
-                        showTrainsModal({
-                            ServerName: server.ServerName,
-                            ServerCode: server.ServerCode,
-                            ServerRegion: server.ServerRegion
-                        });
-                    };
-                } else {
-                    div.style.opacity = '0.6';
-                    div.style.cursor = 'not-allowed';
-                }
-                list.appendChild(div);
-            });
-        })
-        .catch(() => {
-            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
-        });
-
-window.showServerModal = showServerModal;
 
 // Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
 document.addEventListener('click', function (e) {
@@ -1317,83 +1251,5 @@ document.addEventListener('click', function (e) {
     }
 });
 
-// Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
-function getVehicleImage(vehicles) {
-    // Pokud není pole nebo je prázdné, vrať defaultní obrázek
-    if (!Array.isArray(vehicles) || vehicles.length === 0) {
-        return '/Pictures/train_default.png';
-    }
-    const v = vehicles[0];
-    // Přesné mapování na soubory v public\Pictures
-    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
-    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
-    if (v.includes('EN57')) return '/Pictures/en57-009.png';
-    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
-    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
-    if (v.includes('ET22')) return '/Pictures/et22-243.png';
-    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
-    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
-    // Defaultní obrázek
-    return '/Pictures/train_default.png';
-}
-
-// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
-function getDelayHtml(delay) {
-    if (delay > 0) {
-        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
-    } else {
-        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
-    }
-}
-
-// Přidej globální styl pro tabulky a boxy
-(function addCustomTableStyles() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .tables-vertical-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 32px;
-        }
-        .employee-table-container, .activity-table-container {
-            background: rgba(44,47,51,0.92);
-            border-radius: 18px;
-            box-shadow: 0 8px 32px #23272a99;
-            padding: 32px 28px;
-            max-width: 600px;
-            width: 100%;
-        }
-        .employee-table th, .activity-table th {
-            font-size: 1.1em;
-            color: #ffe066;
-            background: #23272a;
-            padding: 12px 0;
-        }
-        .employee-table td, .activity-table td {
-            font-size: 1em;
-            color: #fff;
-            padding: 10px 0;
-        }
-        .employee-table tr, .activity-table tr {
-            transition: background 0.2s;
-        }
-        .employee-table tr:hover, .activity-table tr:hover {
-            background: #2c2f33;
-        }
-        .employee-table, .activity-table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        .employee-table-container h2, .activity-table-container h2 {
-            font-size: 2em;
-            color: #fff;
-            text-align: center;
-            margin-bottom: 18px;
-            font-weight: bold;
-        }
-    `;
-    document.head.appendChild(style);
-})();
 
 
