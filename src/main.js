@@ -1075,7 +1075,7 @@ function showStationServerModal() {
         });
 }
 
-// ...existing code...
+console.log('Multicargo Doprava - verze: 2024-06-09');
 
 // Spustit navigaci na výchozí stránku při načtení
 setPage('prehled');
