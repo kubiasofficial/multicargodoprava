@@ -562,6 +562,7 @@ async function showTrainDetailModal(user, train) {
     }
 
     // Modal HTML (SimRail styl + vlastní barvy)
+    const timeBoxId = 'train-time-box'; // Přidej tuto řádku
     modal.innerHTML = `
         <div class="server-modal-content train-modal-simrail" style="max-width:600px;min-width:340px;position:relative;background:rgba(44,47,51,0.92);border-radius:18px;box-shadow:0 8px 32px #23272a99;padding:32px 28px;">
             <span class="server-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;">&times;</span>
