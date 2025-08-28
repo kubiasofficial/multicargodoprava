@@ -996,14 +996,18 @@ function initializeEmployeesTable() {
     const activityContainerId = 'activity-table-container';
     const activityTableId = 'activity-table';
 
-    // Vylepšené HTML pro tabulky pod sebou (full-width, moderní styl)
+    // Upravené HTML pro tabulky pod sebou (avatar v obou, vlak v bublince v aktivitě)
     const tableHtml = `
         <div class="tables-vertical-container" style="display:block;width:100%;max-width:900px;margin:0 auto;">
             <div id="${tableContainerId}" class="employee-table-container" style="margin-bottom:32px;">
                 <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
                 <table id="${tableId}" class="employee-table" style="width:100%;margin-bottom:0;">
                     <thead>
-                        <tr><th>Avatar</th><th>Jméno</th><th>Role</th></tr>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Jméno</th>
+                            <th>Role</th>
+                        </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
@@ -1017,7 +1021,7 @@ function initializeEmployeesTable() {
                             <th style="padding:12px 0;">Zaměstnanec</th>
                             <th style="padding:12px 0;">Vlak</th>
                             <th style="padding:12px 0;">Trasa</th>
-                            <th style="padding:12px 0;">Čas</th>
+                            <th style="padding:12px 0;">Zpoždění</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1055,10 +1059,13 @@ function initializeEmployeesTable() {
 
             if (userList.length > 0) {
                 userList.forEach(user => {
+                    const avatarUrl = user.id
+                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar || 'a_0'}.png`
+                        : '/Pictures/train_default.png';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>
-                            <img src='https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png' alt='${user.username} avatar' style='width:32px;height:32px;border-radius:50%;background:#222;'>
+                            <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
                         </td>
                         <td>
                             ${user.username} <span style="font-size:0.8em;color:#43b581;">🟢 Ve službě</span>
@@ -1077,7 +1084,7 @@ function initializeEmployeesTable() {
         });
     }
 
-    // Funkce pro načtení aktivity
+    // Aktivita - avatar + vlak v bublince + spoždění místo času
     function updateActivityTable() {
         db.ref('activity').once('value', snapshot => {
             const activities = snapshot.val() || {};
@@ -1088,6 +1095,50 @@ function initializeEmployeesTable() {
                     const avatarUrl = act.id
                         ? `https://cdn.discordapp.com/avatars/${act.id}/${act.avatar || 'a_0'}.png`
                         : '/Pictures/train_default.png';
+                    // Vlaková bublinka
+                    const trainImg = getVehicleImage([act.trainNo]);
+                    // Spočítej zpoždění (pokud je trainNo dostupné)
+                    let delayHtml = '';
+                    if (act.trainNo) {
+                        delayHtml = '<span style="color:#aaa;">Načítám...</span>';
+                        fetch(`/api/simrail-timetable?train=${act.trainNo}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                let timetableObj = Array.isArray(data) ? data.find(obj => obj.trainNoLocal == act.trainNo) : null;
+                                let timetable = timetableObj && Array.isArray(timetableObj.timetable) ? timetableObj.timetable : [];
+                                let stops = timetable;
+                                let delay = 0;
+                                if (Array.isArray(stops) && stops.length > 0) {
+                                    const now = new Date();
+                                    let currentIdx = -1;
+                                    for (let i = 0; i < stops.length; i++) {
+                                        const stop = stops[i];
+                                        const timeStr = stop.departureTime || stop.arrivalTime;
+                                        if (timeStr) {
+                                            const time = new Date(timeStr);
+                                            if (time > now) {
+                                                currentIdx = i - 1;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (currentIdx < 0) currentIdx = 0;
+                                    const stop = stops[currentIdx];
+                                    if (stop) {
+                                        const timeStr = stop.departureTime || stop.arrivalTime;
+                                        if (timeStr) {
+                                            const planned = new Date(timeStr);
+                                            delay = Math.floor((now - planned) / 60000);
+                                            delayHtml = getDelayHtml(delay);
+                                        }
+                                    }
+                                }
+                                tr.querySelector('.activity-delay-cell').innerHTML = delayHtml;
+                            })
+                            .catch(() => {
+                                tr.querySelector('.activity-delay-cell').innerHTML = '<span style="color:#aaa;">N/A</span>';
+                            });
+                    }
                     const tr = document.createElement('tr');
                     tr.style.background = '#23272a';
                     tr.style.borderBottom = '1px solid #2c2f33';
@@ -1099,15 +1150,20 @@ function initializeEmployeesTable() {
                             ${act.username}
                         </td>
                         <td style="padding:10px 0;text-align:center;">
-                            <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
-                                ${act.trainNo}
-                            </span>
+                            <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                                <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:#222;display:flex;align-items:center;justify-content:center;">
+                                    <img src="${trainImg}" alt="Vlak" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
+                                </div>
+                                <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
+                                    ${act.trainNo}
+                                </span>
+                            </div>
                         </td>
                         <td style="padding:10px 0;text-align:center;color:#aaa;">
                             ${act.trainName ? act.trainName : ''}
                         </td>
-                        <td style="padding:10px 0;text-align:center;color:#43b581;">
-                            ${act.time ? new Date(act.time).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                        <td class="activity-delay-cell" style="padding:10px 0;text-align:center;">
+                            ${delayHtml}
                         </td>
                     `;
                     activityBody.appendChild(tr);
@@ -1120,14 +1176,10 @@ function initializeEmployeesTable() {
         });
     }
 
-    // První načtení
     updateTable();
     updateActivityTable();
 
-    // Zruší předchozí interval pokud existuje
     if (employeesInterval) clearInterval(employeesInterval);
-
-    // Aktualizace každých 30 sekund
     employeesInterval = setInterval(() => {
         updateTable();
         updateActivityTable();
