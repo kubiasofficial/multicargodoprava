@@ -378,7 +378,8 @@ function removeActivity(user) {
 
 // Pomocná funkce pro načtení jízdního řádu vlaku
 function fetchTrainTimetable(serverCode, trainNo) {
-    return fetch(`https://api1.aws.simrail.eu:8082/api/getAllTimetables?serverCode=${serverCode}&train=${trainNo}`)
+    // Volání na vlastní backend proxy místo přímo na SimRail API
+    return fetch(`/api/simrail-timetable?serverCode=${serverCode}&train=${trainNo}`)
         .then(res => res.json())
         .catch(() => []);
 }
