@@ -580,52 +580,52 @@ async function showTrainDetailModal(user, train) {
             <div id="train-detail-content">
                 ${stationsHtml}
                 <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
-                    <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail">Ukončit jízdu</button>
+                    <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail" type="button">Ukončit jízdu</button>
                 </div>
             </div>
         </div>
     `;
     document.body.appendChild(modal);
 
-    setTimeout(() => { modal.classList.add('active'); updateTrainDetailTime(); }, 10);
+    setTimeout(() => { 
+        modal.classList.add('active'); 
+        updateTrainDetailTime(); 
+        // Oprav navázání eventů až po vykreslení DOM!
+        document.getElementById('train-modal-minimize').onclick = function () {
+            minimized = !minimized;
+            const content = document.getElementById('train-detail-content');
+            const modalContent = modal.querySelector('.server-modal-content');
+            if (minimized) {
+                content.style.display = 'none';
+                modalContent.style.width = '220px';
+                modalContent.style.minWidth = '220px';
+                modalContent.style.maxWidth = '220px';
+            } else {
+                content.style.display = '';
+                modalContent.style.width = '';
+                modalContent.style.minWidth = '';
+                modalContent.style.maxWidth = '';
+            }
+        };
+        document.getElementById('train-modal-close').onclick = function () {
+            modal.classList.remove('active');
+            setTimeout(() => {
+                clearInterval(interval);
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+            }, 300);
+        };
+        document.getElementById('end-ride-btn').onclick = function () {
+            sendDiscordWebhookTrain(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
+            removeActivity(user);
+            modal.classList.remove('active');
+            setTimeout(() => {
+                clearInterval(interval);
+                if (modal.parentNode) modal.parentNode.removeChild(modal);
+            }, 300);
+        };
+    }, 20);
+
     const interval = setInterval(updateTrainDetailTime, 1000);
-
-    // Minimalizace/obnovení okna
-    document.getElementById('train-modal-minimize').onclick = () => {
-        minimized = !minimized;
-        const content = document.getElementById('train-detail-content');
-        if (minimized) {
-            content.style.display = 'none';
-            modal.querySelector('.server-modal-content').style.width = '220px';
-            modal.querySelector('.server-modal-content').style.minWidth = '220px';
-            modal.querySelector('.server-modal-content').style.maxWidth = '220px';
-        } else {
-            content.style.display = '';
-            modal.querySelector('.server-modal-content').style.width = '';
-            modal.querySelector('.server-modal-content').style.minWidth = '';
-            modal.querySelector('.server-modal-content').style.maxWidth = '';
-        }
-    };
-
-    // Zavření modalu (použij id pro jistotu)
-    document.getElementById('train-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => {
-            clearInterval(interval);
-            if (modal.parentNode) modal.parentNode.removeChild(modal);
-        }, 300);
-    };
-
-    // Ukončení jízdy
-    document.getElementById('end-ride-btn').onclick = () => {
-        sendDiscordWebhookTrain(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
-        removeActivity(user);
-        modal.classList.remove('active');
-        setTimeout(() => {
-            clearInterval(interval);
-            if (modal.parentNode) modal.parentNode.removeChild(modal);
-        }, 300);
-    };
 }
 
 // Změna: kliknutí na vlakovou kartu otevře modal s "Převzít" a "Zavřít"
