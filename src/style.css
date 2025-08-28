@@ -759,3 +759,42 @@ body {
   margin-bottom: 18px;
   font-weight: bold;
 }
+
+.stanice-btn {
+  width: 260px;
+  height: 100px;
+  background: linear-gradient(120deg, rgba(44,47,51,0.25) 0%, rgba(44,47,51,0.05) 100%), url('/Pictures/signalbox.jpg') center center/cover no-repeat;
+  border: 2px solid #43b581;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px #23272a99;
+  color: #fff;
+  font-size: 2.2rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: 
+    transform 0.18s cubic-bezier(.4,2,.3,1),
+    box-shadow 0.18s,
+    border-color 0.18s,
+    filter 0.18s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 2px 8px #000;
+  filter: brightness(0.95);
+}
+
+.stanice-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 12px 40px #43b58155;
+  border-color: #ffe066;
+  filter: brightness(1.08);
+}
+
+.stanice-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4px 16px #23272a99;
+  border-color: #43b581;
+  filter: brightness(0.93);
+}

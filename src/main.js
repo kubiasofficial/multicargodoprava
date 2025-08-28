@@ -143,8 +143,22 @@ function setPage(page) {
                 break;
             case 'vypravci':
                 pageTitle.textContent = 'Výpravčí';
-                pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Výpravčí je ve vývoji. Děkuji za trpělivost.</h2>';
+                pageContent.innerHTML = `
+                    <h2 style="color:#fff;text-align:center;">Stránka Výpravčí je ve vývoji. Děkuji za trpělivost.</h2>
+                    <div style="display:flex;justify-content:center;margin-top:48px;">
+                        <button id="stanice-btn" class="stanice-btn">Do stanice</button>
+                    </div>
+                `;
                 background.style.background = "url('/Pictures/Koluszki.png') center center/cover no-repeat";
+                setTimeout(() => {
+                    const btn = document.getElementById('stanice-btn');
+                    if (btn) {
+                        btn.onclick = () => {
+                            // Zde můžeš otevřít modal nebo jinou akci pro výpravčího
+                            alert('Funkce "Do stanice" zatím není implementována.');
+                        };
+                    }
+                }, 150);
                 break;
             case 'ridic':
                 pageTitle.textContent = 'Řidič';
