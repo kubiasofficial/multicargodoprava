@@ -597,6 +597,23 @@ async function showTrainDetailModal(user, train) {
     let minimized = false; // Proměnná pro stav modalu
     let widget = null;     // Widget element
 
+    // Pomocná proměnná pro blokaci navigace
+    let navigationBlocked = false;
+
+    // Oprava globální navigace - zablokuj pouze když je modal maximalizovaný
+    document.addEventListener('click', function navBlocker(e) {
+        if (navigationBlocked) {
+            // Povolit pouze klik na modal nebo jeho potomky
+            const modalEl = document.getElementById('train-detail-modal');
+            if (modalEl && modalEl.contains(e.target)) return;
+            // Jinak zablokuj navigaci
+            if (e.target.classList.contains('nav-btn') || e.target.closest('.nav-btn')) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+    }, true);
+
     setTimeout(() => {
         modal.classList.add('active');
         // Blikající animace pro zpoždění
@@ -641,6 +658,25 @@ async function showTrainDetailModal(user, train) {
             return 0;
         }
 
+        // Funkce pro blokaci navigace
+        function blockNavigation(block) {
+            navigationBlocked = block;
+        }
+
+        // Oprava globální navigace - zablokuj při minimalizaci
+        document.addEventListener('click', function navBlocker(e) {
+            if (navigationBlocked) {
+                // Povolit pouze klik na widget
+                const widgetEl = document.getElementById('train-minimized-widget');
+                if (widgetEl && widgetEl.contains(e.target)) return;
+                // Jinak zablokuj navigaci
+                if (e.target.classList.contains('nav-btn') || e.target.closest('.nav-btn')) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }
+        }, true);
+
         // Funkce pro zobrazení widgetu vpravo dole
         function showTrainWidget() {
             if (widget) return;
@@ -666,7 +702,11 @@ async function showTrainDetailModal(user, train) {
             const delayHtml = getDelayHtml(delay);
 
             widget.innerHTML = `
-                <img src="${trainImgSrc}" alt="Vlak" style="width:48px;height:48px;border-radius:12px;background:#222;">
+                <div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;">
+                    <div style="width:48px;height:48px;border-radius:50%;background:#222;box-shadow:0 2px 8px #23272a33;display:flex;align-items:center;justify-content:center;">
+                        <img src="${trainImgSrc}" alt="Vlak" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                    </div>
+                </div>
                 <div style="flex:1;">
                     <div style="font-size:1.25em;font-weight:bold;color:#ffe066;">${train.TrainNoLocal}</div>
                     <div style="font-size:1em;color:#fff;">${route}</div>
@@ -685,12 +725,14 @@ async function showTrainDetailModal(user, train) {
                     widget = null;
                 }
                 minimized = false;
+                modal.style.display = '';
                 const content = document.getElementById('train-detail-content');
                 const modalContent = modal.querySelector('.server-modal-content');
                 content.style.display = '';
                 modalContent.style.width = '';
                 modalContent.style.minWidth = '';
                 modalContent.style.maxWidth = '';
+                blockNavigation(true);
             };
 
             document.body.appendChild(widget);
@@ -710,17 +752,15 @@ async function showTrainDetailModal(user, train) {
             const content = document.getElementById('train-detail-content');
             const modalContent = modal.querySelector('.server-modal-content');
             if (minimized) {
-                content.style.display = 'none';
-                modalContent.style.width = '220px';
-                modalContent.style.minWidth = '220px';
-                modalContent.style.maxWidth = '220px';
+                // Skryj modal z prostředku
+                modal.style.display = 'none';
                 showTrainWidget();
+                blockNavigation(false); // Povolit navigaci při minimalizaci
             } else {
-                content.style.display = '';
-                modalContent.style.width = '';
-                modalContent.style.minWidth = '';
-                modalContent.style.maxWidth = '';
+                // Zobraz modal zpět
+                modal.style.display = '';
                 hideTrainWidget();
+                blockNavigation(true); // Zablokovat navigaci při maximalizaci
             }
         };
         document.getElementById('train-modal-close').onclick = function () {
@@ -730,6 +770,7 @@ async function showTrainDetailModal(user, train) {
                 if (modal.parentNode) modal.parentNode.removeChild(modal);
                 if (style.parentNode) style.parentNode.removeChild(style);
                 hideTrainWidget();
+                blockNavigation(false);
             }, 300);
         };
         document.getElementById('end-ride-btn').onclick = function () {
@@ -741,8 +782,12 @@ async function showTrainDetailModal(user, train) {
                 if (modal.parentNode) modal.parentNode.removeChild(modal);
                 if (style.parentNode) style.parentNode.removeChild(style);
                 hideTrainWidget();
+                blockNavigation(false);
             }, 300);
         };
+
+        // Po otevření modalu zablokuj navigaci
+        blockNavigation(true);
     }, 20);
 }
 
