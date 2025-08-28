@@ -954,3 +954,22 @@ document.addEventListener('click', function (e) {
     }
 });
 
+// Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
+function getVehicleImage(vehicles) {
+    // Pokud není pole nebo je prázdné, vrať defaultní obrázek
+    if (!Array.isArray(vehicles) || vehicles.length === 0) {
+        return '/Pictures/train_default.png';
+    }
+    // Zkus najít obrázek podle prvního vozidla
+    const v = vehicles[0];
+    // Můžeš rozšířit podle typů vozidel, zde jednoduchý mapping
+    if (v.includes('EN57')) return '/Pictures/en57.png';
+    if (v.includes('ET22')) return '/Pictures/et22.png';
+    if (v.includes('EP07')) return '/Pictures/ep07.png';
+    if (v.includes('EU07')) return '/Pictures/eu07.png';
+    if (v.includes('SM42')) return '/Pictures/sm42.png';
+    if (v.includes('E186')) return '/Pictures/e186.png';
+    // Defaultní obrázek
+    return '/Pictures/train_default.png';
+}
+
