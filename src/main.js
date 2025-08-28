@@ -1005,6 +1005,4 @@ if (!window.discordUser) {
     } catch {}
 }
 
-// Poznámka: Pokud fetchTrainTimetable vrací "Jízdní řád není dostupný" a v konzoli je CORS error,
-// je nutné použít backend proxy pro volání SimRail API.
 
