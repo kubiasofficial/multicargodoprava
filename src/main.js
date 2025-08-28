@@ -154,8 +154,7 @@ function setPage(page) {
                     const btn = document.getElementById('stanice-btn');
                     if (btn) {
                         btn.onclick = () => {
-                            // Zde můžeš otevřít modal nebo jinou akci pro výpravčího
-                            alert('Funkce "Do stanice" zatím není implementována.');
+                            showStationServerModal();
                         };
                     }
                 }, 150);
@@ -1003,222 +1002,80 @@ function showTrainsModal(server) {
         });
 }
 
-// Úprava: tabulka Aktivita na stránce Přehled načítá data z /activity
-function initializeEmployeesTable() {
-    const tableContainerId = 'employees-table-container';
-    const tableId = 'employees-table';
-    const activityContainerId = 'activity-table-container';
-    const activityTableId = 'activity-table';
+// Modal pro výběr serveru pro výpravčího (Do stanice)
+function showStationServerModal() {
+    let oldModal = document.getElementById('station-server-modal');
+    if (oldModal) oldModal.remove();
 
-    // Upravené HTML pro tabulky pod sebou (avatar v obou, vlak v bublince v aktivitě)
-    const tableHtml = `
-        <div class="tables-vertical-container" style="display:block;width:100%;max-width:900px;margin:0 auto;">
-            <div id="${tableContainerId}" class="employee-table-container" style="margin-bottom:32px;">
-                <h2 style="color:#fff;text-align:center;">Zaměstnanci</h2>
-                <table id="${tableId}" class="employee-table" style="width:100%;margin-bottom:0;">
-                    <thead>
-                        <tr>
-                            <th>Avatar</th>
-                            <th>Jméno</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div id="${activityContainerId}" class="activity-table-container">
-                <h2 style="color:#fff;text-align:center;">Aktivita</h2>
-                <table id="${activityTableId}" class="activity-table" style="width:100%;border-radius:12px;overflow:hidden;">
-                    <thead>
-                        <tr style="background:#23272a;">
-                            <th style="padding:12px 0;">Avatar</th>
-                            <th style="padding:12px 0;">Zaměstnanec</th>
-                            <th style="padding:12px 0;">Vlak</th>
-                            <th style="padding:12px 0;">Trasa</th>
-                            <th style="padding:12px 0;">Zpoždění</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="5" style="text-align:center;">Žádná aktivita zatím není.</td>
-                        </tr>
-                    </tbody>
-                </table>
+    const modal = document.createElement('div');
+    modal.id = 'station-server-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:500px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru pro stanici</h2>
+            <div id="station-servers-list" class="servers-list">
+                <div class="servers-loading">Načítám servery...</div>
             </div>
         </div>
     `;
+    document.body.appendChild(modal);
 
-    // Změní obsah stránky "Přehled"
-    if (pageContent) {
-        pageContent.innerHTML = tableHtml;
-    }
+    setTimeout(() => { modal.classList.add('active'); }, 10);
 
-    // Získání elementu tabulky pro aktualizace
-    const tableBody = document.querySelector(`#${tableId} tbody`);
-    if (!tableBody) {
-        console.error('Element tabulky pro zaměstnance nebyl nalezen.');
-        return;
-    }
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
 
-    // Získání elementu tabulky pro aktivitu
-    const activityBody = document.querySelector('#activity-table tbody');
-
-    // Funkce pro načtení zaměstnanců
-    function updateTable() {
-        db.ref('users').once('value', snapshot => {
-            const users = snapshot.val() || {};
-            // Filtrujeme pouze zaměstnance ve službě
-            const userList = Object.values(users).filter(u => u.working === true);
-            tableBody.innerHTML = ''; // Vyčistí tabulku před novým vykreslením
-
-            if (userList.length > 0) {
-                userList.forEach(user => {
-                    const avatarUrl = user.id
-                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar || 'a_0'}.png`
-                        : '/Pictures/train_default.png';
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>
-                            <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
-                        </td>
-                        <td>
-                            ${user.username} <span style="font-size:0.8em;color:#43b581;">🟢 Ve službě</span>
-                        </td>
-                        <td>
-                            ${user.role ? user.role : ''}
-                        </td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-            } else {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan='3' style='text-align:center;'>Žádný zaměstnanec není ve službě.</td>`;
-                tableBody.appendChild(tr);
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('station-servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
             }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                const isOnline = !!server.IsActive;
+                const statusColor = isOnline ? '#43b581' : '#f04747';
+                const statusText = isOnline ? 'Online' : 'Offline';
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.innerHTML = `
+                    <div class="server-header">
+                        <span>${server.ServerName}</span>
+                        <span class="server-region">${server.ServerRegion}</span>
+                    </div>
+                    <div class="server-info">
+                        <span class="server-status" style="color:${statusColor};font-weight:bold;">
+                            ${statusText}
+                        </span>
+                    </div>
+                `;
+                if (isOnline) {
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        // Zde můžeš otevřít další modal pro výběr stanice nebo jinou akci
+                        alert(`Vybral jsi server: ${server.ServerName}`);
+                    };
+                } else {
+                    div.style.opacity = '0.6';
+                    div.style.cursor = 'not-allowed';
+                }
+                list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('station-servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
         });
-    }
-
-    // Aktivita - avatar + vlak v bublince + aktuální stanice místo trasy + spoždění
-    function updateActivityTable() {
-        db.ref('activity').once('value', snapshot => {
-            const activities = snapshot.val() || {};
-            activityBody.innerHTML = '';
-            // Oprava: kontrola existence tbody před použitím tr.querySelector
-            const activityList = Object.entries(activities);
-            if (activityList.length > 0) {
-                activityList.forEach(([userId, act]) => {
-                    // Oprava: pokud některé pole chybí, použij fallback
-                    const avatarUrl = act.id
-                        ? `https://cdn.discordapp.com/avatars/${act.id}/${act.avatar || 'a_0'}.png`
-                        : '/Pictures/train_default.jpg';
-                    const trainImg = getVehicleImage([act.trainNo]);
-                    let delayHtml = '';
-                    let currentStation = '';
-                    const tr = document.createElement('tr');
-                    tr.style.background = '#23272a';
-                    tr.style.borderBottom = '1px solid #2c2f33';
-                    tr.innerHTML = `
-                        <td style="padding:10px 0;text-align:center;">
-                            <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
-                        </td>
-                        <td style="padding:10px 0;text-align:center;color:#fff;font-weight:bold;">
-                            ${act.username || userId}
-                        </td>
-                        <td style="padding:10px 0;text-align:center;">
-                            <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                                <div style="width:32px;height:32px;border-radius:8px;overflow:hidden;background:#222;display:flex;align-items:center;justify-content:center;">
-                                    <img src="${trainImg}" alt="Vlak" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
-                                </div>
-                                <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
-                                    ${act.trainNo || ''}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="activity-station-cell" style="padding:10px 0;text-align:center;color:#43b581;font-weight:bold;">
-                            ${currentStation}
-                        </td>
-                        <td class="activity-delay-cell" style="padding:10px 0;text-align:center;">
-                            ${delayHtml}
-                        </td>
-                    `;
-                    activityBody.appendChild(tr);
-
-                    // Oprava: fetch až po appendChild, pak kontrola existence buněk
-                    if (act.trainNo) {
-                        fetch(`/api/simrail-timetable?train=${act.trainNo}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                let timetableObj = Array.isArray(data) ? data.find(obj => obj.trainNoLocal == act.trainNo) : null;
-                                let timetable = timetableObj && Array.isArray(timetableObj.timetable) ? timetableObj.timetable : [];
-                                let stops = timetable;
-                                let delay = 0;
-                                let stationName = '';
-                                if (Array.isArray(stops) && stops.length > 0) {
-                                    const now = new Date();
-                                    let currentIdx = -1;
-                                    for (let i = 0; i < stops.length; i++) {
-                                        const stop = stops[i];
-                                        const timeStr = stop.departureTime || stop.arrivalTime;
-                                        if (timeStr) {
-                                            const time = new Date(timeStr);
-                                            if (time > now) {
-                                                currentIdx = i - 1;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    if (currentIdx < 0) currentIdx = 0;
-                                    const stop = stops[currentIdx];
-                                    if (stop) {
-                                        stationName = stop.nameForPerson || stop.stationName || stop.name || '';
-                                        const timeStr = stop.departureTime || stop.arrivalTime;
-                                        if (timeStr) {
-                                            const planned = new Date(timeStr);
-                                            delay = Math.floor((now - planned) / 60000);
-                                            delayHtml = getDelayHtml(delay);
-                                        }
-                                    }
-                                }
-                                // Oprava: kontrola existence buněk před nastavením innerHTML
-                                const stationCell = tr.querySelector('.activity-station-cell');
-                                const delayCell = tr.querySelector('.activity-delay-cell');
-                                if (stationCell) {
-                                    stationCell.innerHTML = stationName ? `<span style="color:#43b581;font-weight:bold;">${stationName}</span>` : '<span style="color:#aaa;">N/A</span>';
-                                }
-                                if (delayCell) {
-                                    delayCell.innerHTML = delayHtml;
-                                }
-                            })
-                            .catch(() => {
-                                const stationCell = tr.querySelector('.activity-station-cell');
-                                const delayCell = tr.querySelector('.activity-delay-cell');
-                                if (stationCell) stationCell.innerHTML = '<span style="color:#aaa;">N/A</span>';
-                                if (delayCell) delayCell.innerHTML = '<span style="color:#aaa;">N/A</span>';
-                            });
-                    }
-                });
-            } else {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td colspan='5' style='text-align:center;'>Žádná aktivita zatím není.</td>`;
-                activityBody.appendChild(tr);
-            }
-        });
-    }
-
-    // První načtení
-    updateTable();
-    updateActivityTable();
-
-    // Zruší předchozí interval pokud existuje
-    if (employeesInterval) clearInterval(employeesInterval);
-
-    // Aktualizace každých 5 sekund
-    employeesInterval = setInterval(() => {
-        updateTable();
-        updateActivityTable();
-    }, 5000);
 }
 
+// ...existing code...
 
 // Spustit navigaci na výchozí stránku při načtení
 setPage('prehled');
@@ -1306,6 +1163,149 @@ function showServerModal() {
             document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
         });
 }
+window.showServerModal = showServerModal;
+
+// Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('#jizda-btn');
+    if (btn) {
+        e.preventDefault();
+        showServerModal();
+    }
+});
+
+// Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
+function getVehicleImage(vehicles) {
+    // Pokud není pole nebo je prázdné, vrať defaultní obrázek
+    if (!Array.isArray(vehicles) || vehicles.length === 0) {
+        return '/Pictures/train_default.png';
+    }
+    const v = vehicles[0];
+    // Přesné mapování na soubory v public\Pictures
+    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
+    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
+    if (v.includes('EN57')) return '/Pictures/en57-009.png';
+    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
+    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
+    if (v.includes('ET22')) return '/Pictures/et22-243.png';
+    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
+    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
+    // Defaultní obrázek
+    return '/Pictures/train_default.png';
+}
+
+// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
+function getDelayHtml(delay) {
+    if (delay > 0) {
+        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
+    } else {
+        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
+    }
+}
+
+// Přidej globální styl pro tabulky a boxy
+(function addCustomTableStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .tables-vertical-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 32px;
+        }
+        .employee-table-container, .activity-table-container {
+            background: rgba(44,47,51,0.92);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #23272a99;
+            padding: 32px 28px;
+            max-width: 600px;
+            width: 100%;
+        }
+        .employee-table th, .activity-table th {
+            font-size: 1.1em;
+            color: #ffe066;
+            background: #23272a;
+            padding: 12px 0;
+        }
+        .employee-table td, .activity-table td {
+            font-size: 1em;
+            color: #fff;
+            padding: 10px 0;
+        }
+        .employee-table tr, .activity-table tr {
+            transition: background 0.2s;
+        }
+        .employee-table tr:hover, .activity-table tr:hover {
+            background: #2c2f33;
+        }
+        .employee-table, .activity-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .employee-table-container h2, .activity-table-container h2 {
+            font-size: 2em;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 18px;
+            font-weight: bold;
+        }
+    `;
+    document.head.appendChild(style);
+})();
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    
+
+    // Oprava: status online/offline podle IsActive
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                const isOnline = !!server.IsActive;
+                const statusColor = isOnline ? '#43b581' : '#f04747';
+                const statusText = isOnline ? 'Online' : 'Offline';
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.innerHTML = `
+                    <div class="server-header">
+                        <span>${server.ServerName}</span>
+                        <span class="server-region">${server.ServerRegion}</span>
+                    </div>
+                    <div class="server-info">
+                        <span class="server-status" style="color:${statusColor};font-weight:bold;">
+                            ${statusText}
+                        </span>
+                    </div>
+                `;
+                if (isOnline) {
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        showTrainsModal({
+                            ServerName: server.ServerName,
+                            ServerCode: server.ServerCode,
+                            ServerRegion: server.ServerRegion
+                        });
+                    };
+                } else {
+                    div.style.opacity = '0.6';
+                    div.style.cursor = 'not-allowed';
+                }
+                list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+
 window.showServerModal = showServerModal;
 
 // Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
