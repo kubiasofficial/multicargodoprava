@@ -753,8 +753,8 @@ function showTrainsModal(server) {
                                 setTimeout(() => modal.remove(), 300);
                             };
 
-                            // Oprava: handler musí být async a musí čekat na showTrainDetailModal
-                            document.getElementById('take-train-btn').onclick = async () => {
+                            // ZDE OPRAVA: handler musí být async, ale showTrainDetailModal musí být volán až po zavření modalu
+                            document.getElementById('take-train-btn').onclick = async function () {
                                 const user = window.discordUser;
                                 if (!user || !user.id) {
                                     alert("Musíš být přihlášený přes Discord!");
@@ -769,11 +769,10 @@ function showTrainsModal(server) {
                                 sendDiscordWebhookTrain(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
                                 saveActivity(userData, train);
                                 modal.classList.remove('active');
-                                setTimeout(() => modal.remove(), 300);
-                                // Počkej na vykreslení detailu vlaku
                                 setTimeout(() => {
+                                    modal.remove();
                                     showTrainDetailModal(userData, train);
-                                }, 350);
+                                }, 300); // musíš zavolat showTrainDetailModal až po odstranění modalu
                             };
                         };
                     });
