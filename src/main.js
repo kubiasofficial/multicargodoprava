@@ -893,7 +893,7 @@ function showServerModal() {
         setTimeout(() => modal.remove(), 300);
     };
 
-    // Načtení serverů z API
+    // Oprava: status online/offline podle IsActive
     fetch('https://panel.simrail.eu:8084/servers-open')
         .then(res => res.json())
         .then(data => {
@@ -905,8 +905,7 @@ function showServerModal() {
             }
             list.innerHTML = '';
             servers.forEach(server => {
-                // Status online/offline podle API
-                const isOnline = server.Status === 'Online' || server.Status === 'online';
+                const isOnline = !!server.IsActive;
                 const statusColor = isOnline ? '#43b581' : '#f04747';
                 const statusText = isOnline ? 'Online' : 'Offline';
                 const div = document.createElement('div');
@@ -920,16 +919,18 @@ function showServerModal() {
                         <span class="server-status" style="color:${statusColor};font-weight:bold;">
                             ${statusText}
                         </span>
-                        <span class="server-players">👥 ${server.PlayersCount || 0}</span>
                     </div>
                 `;
-                // Kliknutí povoleno jen pro online servery
                 if (isOnline) {
                     div.style.cursor = 'pointer';
                     div.onclick = () => {
                         modal.classList.remove('active');
                         setTimeout(() => modal.remove(), 300);
-                        showTrainsModal(server);
+                        showTrainsModal({
+                            ServerName: server.ServerName,
+                            ServerCode: server.ServerCode,
+                            ServerRegion: server.ServerRegion
+                        });
                     };
                 } else {
                     div.style.opacity = '0.6';
