@@ -760,7 +760,7 @@ function showTrainsModal(server) {
                                     }
                                     sendDiscordWebhook(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
                                     saveActivity(userData, train);
-                                    await showTrainDetailModal(userData, train);
+                                    await showTrainDetailModal(userData, train); // musí být await!
                                     modal.classList.remove('active');
                                     setTimeout(() => modal.remove(), 300);
                                 });
