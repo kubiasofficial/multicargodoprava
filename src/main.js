@@ -201,6 +201,9 @@ window.addEventListener('DOMContentLoaded', () => {
             .then(user => {
                 if (modal) modal.style.display = 'none';
                 showDiscordProfile(user);
+                // Ulož uživatele do localStorage a nastav do window.discordUser
+                window.discordUser = user;
+                localStorage.setItem('discord_user', JSON.stringify(user));
             })
             .catch(() => {
                 if (modal) modal.style.display = 'flex';
@@ -209,6 +212,16 @@ window.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.style.display = 'flex';
     }
 });
+
+// Vždy při načtení stránky zkus obnovit Discord uživatele z localStorage
+(function restoreDiscordUser() {
+    try {
+        const userStr = localStorage.getItem('discord_user');
+        if (userStr) {
+            window.discordUser = JSON.parse(userStr);
+        }
+    } catch {}
+})();
 
 function showProfileModal(user) {
     // Pokud modal už existuje, smažeme ho
@@ -317,6 +330,8 @@ function showDiscordProfile(user) {
             avatar: user.avatar,
             id: user.id
         });
+        window.discordUser = user;
+        localStorage.setItem('discord_user', JSON.stringify(user));
         showRolePanel(user);
         // Načteme roli a nastavíme navigaci
         db.ref('users/' + user.id).once('value').then(snap => {
