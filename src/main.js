@@ -437,6 +437,17 @@ function calculateDelay(stop) {
     return diffMin > 0 ? diffMin : 0;
 }
 
+// Globálně definuj timelineSvg (před funkcí showTrainDetailModal)
+const timelineSvg = `
+    <svg width="32" height="80" viewBox="0 0 32 80" style="margin-right:12px;">
+        <circle cx="16" cy="12" r="8" fill="#ffb300"/>
+        <rect x="14" y="20" width="4" height="20" fill="#ffb300"/>
+        <circle cx="16" cy="40" r="8" fill="#ffb300"/>
+        <rect x="14" y="48" width="4" height="20" fill="#ffb300"/>
+        <circle cx="16" cy="68" r="8" fill="#ffb300"/>
+    </svg>
+`;
+
 // Zobrazení detailního modalu vlaku včetně aktuální a následující stanice + spočítané zpoždění
 async function showTrainDetailModal(user, train) {
     // Pokud modal už existuje, smažeme ho
