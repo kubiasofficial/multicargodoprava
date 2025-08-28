@@ -511,20 +511,28 @@ async function showTrainDetailModal(user, train) {
         stationsHtml = `<div style="margin-top:18px;color:#aaa;">Jízdní řád není dostupný.</div>`;
     }
 
-    // Modal HTML
+    // Modal HTML (modernější design)
     modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:540px;min-width:340px;position:relative;">
-            <span class="server-modal-close">&times;</span>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-                <div style="font-size:1.6em;font-weight:bold;color:#ffe066;">${train.TrainNoLocal}</div>
-                <div id="${timeBoxId}" style="font-size:1.25em;color:#43b581;font-weight:bold;"></div>
+        <div class="server-modal-content train-modal-modern" style="max-width:540px;min-width:340px;position:relative;background:linear-gradient(135deg,#23272a 80%,#43b581 100%);border-radius:24px;box-shadow:0 8px 32px rgba(44,47,51,0.35);padding:32px 28px;">
+            <span class="server-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#fff;">&times;</span>
+            <div style="display:flex;align-items:center;gap:22px;margin-bottom:18px;">
+                <div style="background:#23272a;border-radius:50%;width:64px;height:64px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px #23272a;">
+                    <img src="${getVehicleImage(train.Vehicles)}" alt="Vlak" style="width:48px;height:48px;">
+                </div>
+                <div>
+                    <div style="font-size:2em;font-weight:bold;color:#ffe066;letter-spacing:2px;">${train.TrainNoLocal}</div>
+                    <div style="font-size:1.15em;font-weight:bold;color:#fff;">${train.TrainName || ""}</div>
+                </div>
+                <div id="${timeBoxId}" style="font-size:1.25em;color:#43b581;font-weight:bold;margin-left:auto;"></div>
             </div>
-            <div style="font-size:1.15em;font-weight:bold;color:#fff;margin-bottom:8px;">
-                ${train.StartStation} <span style="color:#aaa;">→</span> ${train.EndStation}
+            <div style="font-size:1.18em;font-weight:bold;color:#fff;margin-bottom:12px;text-align:center;">
+                <span style="color:#43b581;">${train.StartStation}</span>
+                <span style="color:#aaa;">→</span>
+                <span style="color:#43b581;">${train.EndStation}</span>
             </div>
             ${stationsHtml}
             <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
-                <button id="end-ride-btn" class="profile-btn profile-btn-red">Ukončit jízdu</button>
+                <button id="end-ride-btn" class="profile-btn profile-btn-red train-modal-btn-modern">Ukončit jízdu</button>
             </div>
         </div>
     `;

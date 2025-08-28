@@ -1,0 +1,37 @@
+/* ...existing code... */
+.train-modal-modern {
+    animation: modalPopIn 0.4s cubic-bezier(.68,-0.55,.27,1.55) both;
+}
+@keyframes modalPopIn {
+    0% { transform: scale(0.85); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.train-detail-station-card {
+    border: 2px solid #23272a;
+    margin-bottom: 8px;
+    transition: box-shadow 0.2s;
+}
+.train-detail-station-card.slide-in {
+    animation: slideInStation 0.7s cubic-bezier(.68,-0.55,.27,1.55) both;
+}
+@keyframes slideInStation {
+    0% { transform: translateY(24px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+.train-modal-btn-modern {
+    font-size: 1.15em;
+    font-weight: bold;
+    border-radius: 12px;
+    padding: 12px 32px;
+    box-shadow: 0 2px 12px #f04747;
+    background: linear-gradient(90deg,#f04747 80%,#ffe066 100%);
+    color: #fff;
+    border: none;
+    transition: box-shadow 0.2s, background 0.2s;
+    cursor: pointer;
+}
+.train-modal-btn-modern:hover {
+    box-shadow: 0 4px 24px #f04747;
+    background: linear-gradient(90deg,#ffe066 0%,#f04747 100%);
+}
+/* ...existing code... */
