@@ -775,7 +775,7 @@ async function showTrainDetailModal(user, train) {
         };
         document.getElementById('end-ride-btn').onclick = function () {
             sendDiscordWebhookTrain(`❌ ${user.username} ukončil jízdu vlaku ${train.TrainNoLocal}`);
-            removeActivity(user);
+            removeActivity(user); // Tím se uživatel odstraní z tabulky Aktivita
             modal.classList.remove('active');
             setTimeout(() => {
                 clearInterval(interval);
@@ -978,7 +978,7 @@ function showTrainsModal(server) {
                                     return;
                                 }
                                 sendDiscordWebhookTrain(`✅ ${userData.username} převzal vlak ${train.TrainNoLocal}`);
-                                saveActivity(userData, train);
+                                saveActivity(userData, train); // Tím se uživatel objeví v tabulce Aktivita
                                 modal.classList.remove('active');
                                 setTimeout(() => {
                                     if (document.body.contains(modal)) modal.remove();
