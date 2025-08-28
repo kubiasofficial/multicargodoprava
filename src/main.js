@@ -562,19 +562,26 @@ async function showTrainDetailModal(user, train) {
     }
 
     // Modal HTML (SimRail styl + vlastní barvy)
-    const timeBoxId = 'train-time-box'; // Přidej tuto řádku
+    const timeBoxId = 'train-time-box';
+    let minimized = false;
+    const trainImg = getVehicleImage(train.Vehicles);
+
     modal.innerHTML = `
         <div class="server-modal-content train-modal-simrail" style="max-width:600px;min-width:340px;position:relative;background:rgba(44,47,51,0.92);border-radius:18px;box-shadow:0 8px 32px #23272a99;padding:32px 28px;">
-            <span class="server-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;">&times;</span>
+            <span class="server-modal-close" id="train-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;">&times;</span>
+            <span id="train-modal-minimize" style="font-size:1.8em;top:18px;right:54px;position:absolute;cursor:pointer;color:#ffe066;" title="Minimalizovat">_</span>
             <div style="display:flex;align-items:center;gap:22px;margin-bottom:18px;">
+                <img src="${trainImg}" alt="Vlak" style="width:64px;height:64px;border-radius:12px;background:#222;box-shadow:0 2px 8px #23272a33;">
                 <div style="font-size:2.8em;font-weight:bold;color:#ffe066;background:#23272a;padding:12px 24px;border-radius:16px;box-shadow:0 2px 12px #23272a;">
                     ${train.TrainNoLocal}
                 </div>
                 <div id="${timeBoxId}" style="font-size:1.25em;color:#43b581;font-weight:bold;margin-left:auto;"></div>
             </div>
-            ${stationsHtml}
-            <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
-                <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail">Ukončit jízdu</button>
+            <div id="train-detail-content">
+                ${stationsHtml}
+                <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
+                    <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail">Ukončit jízdu</button>
+                </div>
             </div>
         </div>
     `;
@@ -583,12 +590,29 @@ async function showTrainDetailModal(user, train) {
     setTimeout(() => { modal.classList.add('active'); updateTrainDetailTime(); }, 10);
     const interval = setInterval(updateTrainDetailTime, 1000);
 
-    // Zavření modalu
-    modal.querySelector('.server-modal-close').onclick = () => {
+    // Minimalizace/obnovení okna
+    document.getElementById('train-modal-minimize').onclick = () => {
+        minimized = !minimized;
+        const content = document.getElementById('train-detail-content');
+        if (minimized) {
+            content.style.display = 'none';
+            modal.querySelector('.server-modal-content').style.width = '220px';
+            modal.querySelector('.server-modal-content').style.minWidth = '220px';
+            modal.querySelector('.server-modal-content').style.maxWidth = '220px';
+        } else {
+            content.style.display = '';
+            modal.querySelector('.server-modal-content').style.width = '';
+            modal.querySelector('.server-modal-content').style.minWidth = '';
+            modal.querySelector('.server-modal-content').style.maxWidth = '';
+        }
+    };
+
+    // Zavření modalu (použij id pro jistotu)
+    document.getElementById('train-modal-close').onclick = () => {
         modal.classList.remove('active');
         setTimeout(() => {
             clearInterval(interval);
-            modal.remove();
+            if (modal.parentNode) modal.parentNode.removeChild(modal);
         }, 300);
     };
 
@@ -599,7 +623,7 @@ async function showTrainDetailModal(user, train) {
         modal.classList.remove('active');
         setTimeout(() => {
             clearInterval(interval);
-            modal.remove();
+            if (modal.parentNode) modal.parentNode.removeChild(modal);
         }, 300);
     };
 }
