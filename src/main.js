@@ -1089,9 +1089,11 @@ function initializeEmployeesTable() {
         db.ref('activity').once('value', snapshot => {
             const activities = snapshot.val() || {};
             activityBody.innerHTML = '';
-            const activityList = Object.values(activities);
+            // Oprava: použij Object.entries, aby se zachovala ID uživatelů
+            const activityList = Object.entries(activities);
             if (activityList.length > 0) {
-                activityList.forEach(act => {
+                activityList.forEach(([userId, act]) => {
+                    // Oprava: pokud některé pole chybí, použij fallback
                     const avatarUrl = act.id
                         ? `https://cdn.discordapp.com/avatars/${act.id}/${act.avatar || 'a_0'}.png`
                         : '/Pictures/train_default.png';
@@ -1151,7 +1153,7 @@ function initializeEmployeesTable() {
                             <img src="${avatarUrl}" alt="avatar" style="width:32px;height:32px;border-radius:50%;background:#222;">
                         </td>
                         <td style="padding:10px 0;text-align:center;color:#fff;font-weight:bold;">
-                            ${act.username}
+                            ${act.username || userId}
                         </td>
                         <td style="padding:10px 0;text-align:center;">
                             <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -1159,7 +1161,7 @@ function initializeEmployeesTable() {
                                     <img src="${trainImg}" alt="Vlak" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
                                 </div>
                                 <span style="font-size:1.1em;font-weight:bold;color:#ffe066;background:#23272a;padding:4px 12px;border-radius:8px;">
-                                    ${act.trainNo}
+                                    ${act.trainNo || ''}
                                 </span>
                             </div>
                         </td>
