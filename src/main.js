@@ -538,9 +538,7 @@ async function showTrainDetailModal(user, train) {
                     </div>
                     ${stops.map((stop, idx) => {
                         const delay = calculateDelayWithPosition(stop, idx+1);
-                        const delayHtml = delay > 0
-                            ? `<span style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`
-                            : `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
+                        const delayHtml = getDelayHtml(delay);
                         return `
                             <div style="font-size:1.08em;color:#ffe066;background:#23272a;padding:6px 12px;border-radius:8px;margin:6px 0;display:flex;align-items:center;box-shadow:0 2px 8px #23272a22;">
                                 <span style="font-style:italic;color:#ffe066;">${stop.nameForPerson}</span>
@@ -562,10 +560,6 @@ async function showTrainDetailModal(user, train) {
     }
 
     // Modal HTML (SimRail styl + vlastní barvy)
-    const timeBoxId = 'train-time-box';
-    let minimized = false;
-    const trainImg = getVehicleImage(train.Vehicles);
-
     modal.innerHTML = `
         <div class="server-modal-content train-modal-simrail" style="max-width:600px;min-width:340px;position:relative;background:rgba(44,47,51,0.92);border-radius:18px;box-shadow:0 8px 32px #23272a99;padding:32px 28px;">
             <span class="server-modal-close" id="train-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;">&times;</span>
@@ -589,7 +583,31 @@ async function showTrainDetailModal(user, train) {
 
     setTimeout(() => { 
         modal.classList.add('active'); 
-        updateTrainDetailTime(); 
+        // Blikající animace pro zpoždění
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .delay-blink {
+                animation: blink-delay 1s infinite;
+            }
+            @keyframes blink-delay {
+                0% { opacity: 1; }
+                50% { opacity: 0.3; }
+                100% { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Funkce pro čas v modalu
+        function updateTrainDetailTime() {
+            const el = document.getElementById(timeBoxId);
+            if (el) {
+                const now = new Date();
+                el.textContent = now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        }
+        updateTrainDetailTime();
+        const interval = setInterval(updateTrainDetailTime, 1000);
+
         // Oprav navázání eventů až po vykreslení DOM!
         document.getElementById('train-modal-minimize').onclick = function () {
             minimized = !minimized;
@@ -612,6 +630,7 @@ async function showTrainDetailModal(user, train) {
             setTimeout(() => {
                 clearInterval(interval);
                 if (modal.parentNode) modal.parentNode.removeChild(modal);
+                if (style.parentNode) style.parentNode.removeChild(style);
             }, 300);
         };
         document.getElementById('end-ride-btn').onclick = function () {
@@ -621,11 +640,10 @@ async function showTrainDetailModal(user, train) {
             setTimeout(() => {
                 clearInterval(interval);
                 if (modal.parentNode) modal.parentNode.removeChild(modal);
+                if (style.parentNode) style.parentNode.removeChild(style);
             }, 300);
         };
     }, 20);
-
-    const interval = setInterval(updateTrainDetailTime, 1000);
 }
 
 // Změna: kliknutí na vlakovou kartu otevře modal s "Převzít" a "Zavřít"
