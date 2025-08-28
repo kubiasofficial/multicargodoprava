@@ -743,7 +743,17 @@ function showTrainsModal(server) {
                     list.innerHTML = '<div class="servers-loading">Žádný vlak neodpovídá hledání.</div>';
                     return;
                 }
-                list.innerHTML = '<div class="train-bubbles">';
+                // Změna: vlakové karty jako grid
+                list.innerHTML = `
+                    <div class="train-bubbles-grid" style="
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                        gap: 24px;
+                        padding: 12px 0;
+                    ">
+                    </div>
+                `;
+                const grid = list.querySelector('.train-bubbles-grid');
                 filtered.forEach(train => {
                     const trainImg = getVehicleImage(train.Vehicles);
                     const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
@@ -751,24 +761,26 @@ function showTrainsModal(server) {
                         ? '<svg width="22" height="22" fill="#43b581" style="vertical-align:middle;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
                         : '<svg width="22" height="22" fill="#f04747" style="vertical-align:middle;" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/></svg>';
                     const route = `${train.StartStation} → ${train.EndStation}`;
-                    list.innerHTML += `
-                        <div class="train-bubble train-bubble-modern" style="cursor:pointer;" data-train-no="${train.TrainNoLocal}">
-                            <div class="train-bubble-imgbox-modern">
-                                <img src="${trainImg}" alt="Vlak" class="train-bubble-img-modern">
-                                <span class="train-bubble-status-modern">${statusIcon}</span>
-                            </div>
-                            <div class="train-bubble-info-modern">
-                                <span class="train-bubble-number-modern">${train.TrainNoLocal}</span>
-                                <span class="train-bubble-route-modern">${route}</span>
-                            </div>
+                    const card = document.createElement('div');
+                    card.className = 'train-bubble train-bubble-modern';
+                    card.setAttribute('data-train-no', train.TrainNoLocal);
+                    card.style.cursor = 'pointer';
+                    card.innerHTML = `
+                        <div class="train-bubble-imgbox-modern">
+                            <img src="${trainImg}" alt="Vlak" class="train-bubble-img-modern">
+                            <span class="train-bubble-status-modern">${statusIcon}</span>
+                        </div>
+                        <div class="train-bubble-info-modern">
+                            <span class="train-bubble-number-modern">${train.TrainNoLocal}</span>
+                            <span class="train-bubble-route-modern">${route}</span>
                         </div>
                     `;
+                    grid.appendChild(card);
                 });
-                list.innerHTML += '</div>';
 
                 // Oprava: Event handler pro kliknutí na vlakovou kartu
                 setTimeout(() => {
-                    document.querySelectorAll('.train-bubble-modern').forEach(card => {
+                    grid.querySelectorAll('.train-bubble-modern').forEach(card => {
                         card.addEventListener('click', function () {
                             const trainNo = card.getAttribute('data-train-no');
                             const train = trains.find(t => t.TrainNoLocal == trainNo);
