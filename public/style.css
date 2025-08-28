@@ -34,4 +34,24 @@
     box-shadow: 0 4px 24px #f04747;
     background: linear-gradient(90deg,#ffe066 0%,#f04747 100%);
 }
+.train-modal-simrail {
+    animation: modalPopIn 0.4s cubic-bezier(.68,-0.55,.27,1.55) both;
+}
+.train-modal-btn-simrail {
+    font-size: 1.15em;
+    font-weight: bold;
+    border-radius: 12px;
+    padding: 12px 32px;
+    box-shadow: 0 2px 12px #ff9800;
+    background: linear-gradient(90deg,#ff9800 80%,#ffe066 100%);
+    color: #23272a;
+    border: none;
+    transition: box-shadow 0.2s, background 0.2s;
+    cursor: pointer;
+}
+.train-modal-btn-simrail:hover {
+    box-shadow: 0 4px 24px #ff9800;
+    background: linear-gradient(90deg,#ffe066 0%,#ff9800 100%);
+    color: #23272a;
+}
 /* ...existing code... */
