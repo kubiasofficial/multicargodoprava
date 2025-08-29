@@ -1,3 +1,72 @@
+// Funkce pro zobrazení modalu s výběrem serveru a následně vlaků
+function showServerModal() {
+    let oldModal = document.getElementById('server-select-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'server-select-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:500px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru</h2>
+            <div id="servers-list" class="servers-list">
+                <div class="servers-loading">Načítám servery...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    // Načtení serverů z API
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.innerHTML = `
+                    <div class="server-header">
+                        <span>${server.ServerName}</span>
+                        <span class="server-region">${server.ServerRegion}</span>
+                    </div>
+                    <div class="server-info">
+                        <span class="server-status" style="color:${server.IsActive ? '#43b581' : '#f04747'};font-weight:bold;">
+                            ${server.IsActive ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
+                `;
+                if (server.IsActive) {
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        showTrainsModal(server);
+                    };
+                } else {
+                    div.style.opacity = '0.6';
+                    div.style.cursor = 'not-allowed';
+                }
+                list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+}
 // Firebase inicializace
 const firebaseConfig = {
     apiKey: "ATasYBexZoBfDYNqIu2r5RM9v8sNV6cV1dJU",
@@ -1137,6 +1206,30 @@ document.addEventListener('click', function (e) {
     }
 });
 
+// Základní funkce pro zobrazení modalu s výběrem serveru
+function showServerModal() {
+    let oldModal = document.getElementById('server-select-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'server-select-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:500px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru</h2>
+            <div style="text-align:center;">Zde bude výběr serveru nebo vlaků.</div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+}
 // Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
 function getVehicleImage(vehicles) {
     // Pokud není pole nebo je prázdné, vrať defaultní obrázek
