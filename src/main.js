@@ -993,23 +993,71 @@ function showTrainsModal(server) {
                     const trainImg = getVehicleImage(train.Vehicles);
                     const isPlayer = train.Type === 'player' || (train.TrainData && train.TrainData.ControlledBySteamID);
                     const statusIcon = isPlayer
-                        ? '<span title="Hráč" style="font-size:1.3em;margin-right:6px;vertical-align:middle;">🧑‍💻</span>'
-                        : '<span title="Bot" style="font-size:1.3em;margin-right:6px;vertical-align:middle;">🤖</span>';
+                        ? '<span title="Hráč" style="font-size:1.3em;margin-right:8px;vertical-align:middle;">🧑‍💻</span>'
+                        : '<span title="Bot" style="font-size:1.3em;margin-right:8px;vertical-align:middle;">🤖</span>';
                     const route = `${train.StartStation} → ${train.EndStation}`;
                     grid.innerHTML += `
-                        <div class="train-card-select" data-train-no="${train.TrainNoLocal}">
-                            <div class="train-card-img-bubble">
+                        <div class="train-card-wide" data-train-no="${train.TrainNoLocal}">
+                            <div class="train-card-img-wide">
                                 <img src="${trainImg}" alt="Vlak">
                             </div>
-                            <div class="train-card-info">
-                                <div class="train-card-row">
+                            <div class="train-card-info-wide">
+                                <div class="train-card-row-wide">
                                     ${statusIcon}
-                                    <span class="train-card-number">${train.TrainNoLocal}</span>
+                                    <span class="train-card-number-wide">${train.TrainNoLocal}</span>
                                 </div>
-                                <div class="train-card-route">${route}</div>
+                                <div class="train-card-route-wide">${route}</div>
                             </div>
                         </div>
                     `;
+                });
+                // Event handler pro kliknutí na vlakovou kartu
+                grid.querySelectorAll('.train-card-wide').forEach(card => {
+                    card.addEventListener('click', function () {
+                        const trainNo = card.getAttribute('data-train-no');
+                        const train = trains.find(t => t.TrainNoLocal == trainNo);
+                        if (!train) return;
+                        let oldModal = document.getElementById('take-train-modal');
+                        if (oldModal) oldModal.remove();
+                        const modal = document.createElement('div');
+                        modal.id = 'take-train-modal';
+                        modal.className = 'server-modal';
+                        modal.innerHTML = `
+                            <div class="server-modal-content" style="max-width:400px;">
+                                <span class="server-modal-close">&times;</span>
+                                <h2 style="text-align:center;margin-bottom:18px;">Vlak ${train.TrainNoLocal}</h2>
+                                <div style="text-align:center;margin-bottom:18px;">
+                                    <span style="font-size:1.1em;color:#fff;">${train.StartStation} → ${train.EndStation}</span>
+                                </div>
+                                <div style="display:flex;gap:16px;justify-content:center;">
+                                    <button id="take-train-btn" class="profile-btn profile-btn-green">Převzít</button>
+                                    <button id="close-train-btn" class="profile-btn profile-btn-red">Zavřít</button>
+                                </div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                        setTimeout(() => { modal.classList.add('active'); }, 10);
+                        modal.addEventListener('click', async function (e) {
+                            if (e.target.id === 'close-train-btn' || e.target.classList.contains('server-modal-close')) {
+                                modal.classList.remove('active');
+                                setTimeout(() => modal.remove(), 300);
+                            }
+                            if (e.target.id === 'take-train-btn') {
+                                const user = window.discordUser;
+                                if (!user || !user.id) {
+                                    alert("Musíš být prostě přihlášený přes Discord!");
+                                    return;
+                                }
+                                sendDiscordWebhookTrain(`✅ ${user.username} převzal vlak ${train.TrainNoLocal}`);
+                                saveActivity(user, train);
+                                modal.classList.remove('active');
+                                setTimeout(() => {
+                                    if (document.body.contains(modal)) modal.remove();
+                                    showTrainDetailModal(user, train);
+                                }, 350);
+                            }
+                        });
+                    });
                 });
                 // Event handler pro kliknutí na vlakovou kartu
                 grid.querySelectorAll('.train-card-select').forEach(card => {
