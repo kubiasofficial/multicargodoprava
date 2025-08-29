@@ -1564,12 +1564,21 @@ function showDispatcherPanel(station, serverCode) {
         .then(res => res.json())
         .then(data => {
             console.log('EDR API data:', data);
+            // Debug: vypiš první vlak a jeho timetable
+            if (data.length > 0) {
+                console.log('První vlak:', data[0]);
+                if (Array.isArray(data[0].timetable)) {
+                    console.log('Timetable prvního vlaku:', data[0].timetable);
+                }
+            }
             // Filtruj vlaky, které mají v timetable danou stanici
             const departures = [];
             const arrivals = [];
             data.forEach(train => {
                 if (Array.isArray(train.timetable)) {
                     train.timetable.forEach((stop, idx) => {
+                        // Debug: vypiš stop objekt
+                        // console.log('Stop:', stop);
                         if (stop.pointId == station.id) {
                             // Odjezd: pokud má departureTime
                             if (stop.departureTime) {
