@@ -308,120 +308,51 @@ function setPage(page) {
                 pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič je ve vývoji.</h2>';
                 background.style.background = "url('/Pictures/bus.png') center center/cover no-repeat";
                 break;
-                        case 'prehled':
-                                pageTitle.textContent = 'Přehled';
-                                background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                                                                pageContent.innerHTML = `
-                                                                    <div class="tables-vertical-container">
-                                                                        <div class="employee-table-container">
-                                                                            <h2>Zaměstnanci ve službě</h2>
-                                                                            <table class="employee-table" id="employee-table">
-                                                                                <thead>
-                                                                                    <tr>
-                                                                                        <th style="text-align:left;">Uživatel</th>
-                                                                                        <th style="text-align:left;">Role</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody></tbody>
-                                                                            </table>
-                                                                        </div>
-                                                                        <div class="activity-table-container">
-                                                                            <h2>Aktivní jízdy</h2>
-                                                                            <table class="activity-table" id="activity-table">
-                                                                                <thead>
-                                                                                    <tr>
-                                                                                        <th style="text-align:left;">Uživatel</th>
-                                                                                        <th style="text-align:left;">Číslo vlaku</th>
-                                                                                        <th style="text-align:left;">Počáteční stanice</th>
-                                                                                        <th style="text-align:left;">Konečná stanice</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody></tbody>
-                                                                            </table>
-                                                                        </div>
-                                                                    </div>
-                                                                `;
-                                                // Živá aktualizace zaměstnanců ve službě
-                                                if (window.employeesListener) window.employeesListener.off();
-                                                window.employeesListener = db.ref('users').orderByChild('working').equalTo(true);
-                                                                                                window.employeesListener.on('value', snap => {
-                                                                                                    const tbody = document.querySelector('#employee-table tbody');
-                                                                                                    if (tbody) {
-                                                                                                        tbody.innerHTML = '';
-                                                                                                        snap.forEach(child => {
-                                                                                                            const val = child.val();
-                                                                                                            let avatarHtml = '';
-                                                                                                            if (val.avatar && val.id) {
-                                                                                                                avatarHtml = `<img class="user-avatar" src="https://cdn.discordapp.com/avatars/${val.id}/${val.avatar}.png" alt="pfp">`;
-                                                                                                            } else {
-                                                                                                                avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
-                                                                                                            }
-                                                                                                            const tr = document.createElement('tr');
-                                                                                                            tr.innerHTML = `
-                                                                                                                <td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td>
-                                                                                                                <td style="text-align:left;">${val.role || '-'}</td>
-                                                                                                            `;
-                                                                                                            tbody.appendChild(tr);
-                                                                                                        });
-                                                                                                    }
-                                                                                                });
-                                                                                                // Živá aktualizace aktivních jízd
-                                                                                                if (window.activityListener) window.activityListener.off();
-                                                                                                window.activityListener = db.ref('activity');
-                                                                                                window.activityListener.on('value', async snap => {
-                                                                                                    const tbody = document.querySelector('#activity-table tbody');
-                                                                                                    if (tbody) {
-                                                                                                        tbody.innerHTML = '';
-                                                                                                        // Inicializace cache jízdních řádů
-                                                                                                        if (!window.trainTimetables) window.trainTimetables = {};
-                                                                                                        const promises = [];
-                                                                                                        snap.forEach(child => {
-                                                                                                            const val = child.val();
-                                                                                                            if (val.trainNo && !window.trainTimetables[val.trainNo]) {
-                                                                                                                // Získání jízdního řádu přes proxy endpoint
-                                                                                                                promises.push(
-                                                                                                                    fetch(`/api/simrail-timetable?serverCode=en1&train=${val.trainNo}`)
-                                                                                                                        .then(res => res.json())
-                                                                                                                        .then(data => {
-                                                                                                                            if (Array.isArray(data) && data.length > 0) {
-                                                                                                                                // Najdi správný vlak podle čísla vlaku
-                                                                                                                                let timetableObj = data.find(obj => obj.trainNoLocal == val.trainNo);
-                                                                                                                                if (!timetableObj && data.length === 1) timetableObj = data[0];
-                                                                                                                                if (timetableObj) window.trainTimetables[val.trainNo] = timetableObj;
-                                                                                                                            }
-                                                                                                                        })
-                                                                                                                );
-                                                                                                            }
-                                                                                                        });
-                                                                                                        await Promise.all(promises);
-                                                                                                        snap.forEach(child => {
-                                                                                                            const val = child.val();
-                                                                                                            let avatarHtml = '';
-                                                                                                            if (val.avatar && val.id) {
-                                                                                                                avatarHtml = `<img class="user-avatar" src="https://cdn.discordapp.com/avatars/${val.id}/${val.avatar}.png" alt="pfp">`;
-                                                                                                            } else {
-                                                                                                                avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
-                                                                                                            }
-                                                                                                            // Získání počáteční a koncové stanice vlaku z načtených dat
-                                                                                                            let startStation = '-';
-                                                                                                            let endStation = '-';
-                                                                                                            if (val.trainNo && window.trainTimetables[val.trainNo]) {
-                                                                                                                const timetableObj = window.trainTimetables[val.trainNo];
-                                                                                                                if (timetableObj.startStation) startStation = timetableObj.startStation;
-                                                                                                                if (timetableObj.endStation) endStation = timetableObj.endStation;
-                                                                                                            }
-                                                                                                            const tr = document.createElement('tr');
-                                                                                                            tr.innerHTML = `
-                                                                                                                <td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td>
-                                                                                                                <td style="text-align:left;">${val.trainNo || '-'} </td>
-                                                                                                                <td style="text-align:left;">${startStation}</td>
-                                                                                                                <td style="text-align:left;">${endStation}</td>
-                                                                                                            `;
-                                                                                                            tbody.appendChild(tr);
-                                                                                                        });
-                                                                                                    }
-                                                                                                });
-                                break;
+            case 'prehled':
+                pageTitle.textContent = 'Přehled';
+                background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
+                // Vytvoř nový layout se 4 tabulkami
+                pageContent.innerHTML = `
+                  <div id="overview-tables-container" style="display:flex;flex-direction:row;justify-content:center;align-items:flex-start;gap:48px;margin-top:48px;">
+                    <div class="tables-vertical-container" style="flex:1;min-width:340px;">
+                      <div class="employee-table-container">
+                        <h2>Zaměstnanci ve službě</h2>
+                        <table class="employee-table" id="employee-table">
+                          <thead><tr><th style="text-align:left;">Uživatel</th><th style="text-align:left;">Role</th></tr></thead>
+                          <tbody></tbody>
+                        </table>
+                      </div>
+                      <div class="activity-table-container">
+                        <h2>Aktivní jízdy</h2>
+                        <table class="activity-table" id="activity-table">
+                          <thead><tr><th style="text-align:left;">Uživatel</th><th style="text-align:left;">Číslo vlaku</th><th style="text-align:left;">Počáteční stanice</th><th style="text-align:left;">Konečná stanice</th></tr></thead>
+                          <tbody></tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div class="tables-vertical-container" style="flex:1;min-width:340px;">
+                      <div class="employee-table-container">
+                        <h2>Řidiči</h2>
+                        <table class="employee-table" id="driver-table">
+                          <thead><tr><th style="text-align:left;">Řidič</th><th style="text-align:left;">Mapa</th><th style="text-align:left;">Linka</th></tr></thead>
+                          <tbody></tbody>
+                        </table>
+                      </div>
+                      <div class="employee-table-container">
+                        <h2>Výpravčí</h2>
+                        <table class="employee-table" id="dispatcher-table">
+                          <thead><tr><th style="text-align:left;">Výpravčí</th><th style="text-align:left;">Server</th><th style="text-align:left;">Stanice</th></tr></thead>
+                          <tbody></tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                `;
+                // Spusť živé aktualizace všech tabulek
+                initializeEmployeesTable();
+                initializeDriverTable();
+                initializeDispatcherTable();
+                break;
             default:
                 pageTitle.textContent = 'Přehled';
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
@@ -1970,6 +1901,222 @@ function getVehicleImage(vehicles) {
     if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
     // Defaultní obrázek
     return '/Pictures/train_default.png';
+}
+
+// Živá tabulka zaměstnanců ve službě
+function initializeEmployeesTable() {
+    if (window.employeesListener) window.employeesListener.off && window.employeesListener.off();
+    window.employeesListener = db.ref('users').orderByChild('working').equalTo(true);
+    window.employeesListener.on('value', snap => {
+        const tbody = document.querySelector('#employee-table tbody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            snap.forEach(child => {
+                const val = child.val();
+                let avatarHtml = '';
+                if (val.avatar && val.id) {
+                    avatarHtml = `<img class="user-avatar" src="https://cdn.discordapp.com/avatars/${val.id}/${val.avatar}.png" alt="pfp">`;
+                } else {
+                    avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
+                }
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td><td style="text-align:left;">${val.role || '-'} </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+
+// Živá tabulka aktivních jízd
+function initializeActivityTable() {
+    if (window.activityListener) window.activityListener.off && window.activityListener.off();
+    window.activityListener = db.ref('activity');
+    window.activityListener.on('value', snap => {
+        const tbody = document.querySelector('#activity-table tbody');
+        if (tbody) {
+            tbody.innerHTML = '';
+            snap.forEach(child => {
+                const val = child.val();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${val.username || child.key}</td><td>${val.trainNo || '-'} </td><td>${val.trainName || '-'} </td><td>${val.endStation || '-'} </td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+
+// Nová funkce: živá tabulka řidičů (dummy data, uprav dle skutečné logiky)
+function initializeDriverTable() {
+    const tbody = document.querySelector('#driver-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    // TODO: Replace with real driver data source
+    // Example dummy data:
+    const drivers = [
+        { name: 'Petr', map: 'Praha', line: 'A' },
+        { name: 'Jana', map: 'Brno', line: 'B' }
+    ];
+    drivers.forEach(driver => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${driver.name}</td><td>${driver.map}</td><td>${driver.line}</td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// Nová funkce: živá tabulka výpravčích
+function initializeDispatcherTable() {
+    const tbody = document.querySelector('#dispatcher-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (window.dispatcherListener) window.dispatcherListener.off && window.dispatcherListener.off();
+    window.dispatcherListener = db.ref('dispatchers');
+    window.dispatcherListener.on('value', snap => {
+        tbody.innerHTML = '';
+        snap.forEach(child => {
+            const val = child.val();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${val.username || child.key}</td><td>${val.server || '-'} </td><td>${val.station || '-'} </td>`;
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+// Odstranění výpravčího ze stavu (např. při odchodu ze služby)
+function removeDispatcher(userId) {
+    db.ref('dispatchers/' + userId).remove();
+}
+
+// Přidání výpravčího do stavu (např. při příchodu do služby)
+function addDispatcher(user) {
+    db.ref('dispatchers/' + user.id).set({
+        username: user.username,
+        avatar: user.avatar,
+        id: user.id,
+        server: user.server || '-',
+        station: user.station || '-',
+        role: user.role || '-',
+        working: true
+    });
+}
+
+// Odeslání zprávy na Discord webhook při příchodu/odchodu výpravčího
+function sendDispatcherWebhook(user, action) {
+    const content = action === 'arrival'
+        ? `✅ ${user.username} přišel do služby jako výpravčí`
+        : `❌ ${user.username} odešel ze služby jako výpravčí`;
+    fetch("https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+    });
+}
+
+// Přidání/odebrání výpravčího při příchodu/odchodu ze služby
+document.addEventListener('DOMContentLoaded', () => {
+    const user = window.discordUser;
+    if (!user || !user.id) return;
+
+    // Při příchodu do služby
+    document.getElementById('profile-arrival').onclick = () => {
+        db.ref('users/' + user.id).update({ working: true });
+        sendDiscordWebhookArrival(`✅ ${user.username} přišel do služby`);
+        addDispatcher(user);
+    };
+
+    // Při odchodu ze služby
+    document.getElementById('profile-leave').onclick = () => {
+        db.ref('users/' + user.id).update({ working: false });
+        sendDiscordWebhookArrival(`❌ ${user.username} odešel ze služby`);
+        removeDispatcher(user.id);
+    };
+});
+
+// Oprava: při převzetí stanice přidat výpravčího do stavu
+function showStationTakeoverModal(station, serverCode, isOccupied = false) {
+    let oldModal = document.getElementById('station-takeover-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'station-takeover-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:420px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">${isOccupied ? 'Stanice je obsazena' : 'Převzít stanici'}: ${station.Name}</h2>
+            <div style="text-align:center;margin-bottom:18px;color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
+                ${isOccupied ? 'Stanici aktuálně někdo obsluhuje. Pokud ji převezmete, může dojít k odpojení původního výpravčího.' : 'Stanice je volná.'}
+            </div>
+            <div style="display:flex;gap:18px;justify-content:center;">
+                <button id="station-takeover-btn" class="profile-btn profile-btn-green" style="font-size:1.15em;">Převzít</button>
+                <button id="station-cancel-btn" class="profile-btn profile-btn-red" style="font-size:1.15em;">Zavřít</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+    document.getElementById('station-cancel-btn').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+    document.getElementById('station-takeover-btn').onclick = async () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+        // Odeslat zprávu na Discord webhook
+        let username = window.currentUser?.username;
+        if (!username && window.localStorage) {
+            const userStr = localStorage.getItem('discord_user');
+            if (userStr) {
+                try {
+                    const userObj = JSON.parse(userStr);
+                    username = userObj.username;
+                } catch (e) {}
+            }
+            if (!username) {
+                username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+            }
+        }
+        fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `:train2: **${username}** převzal stanici **${station.Name}** (${station.Prefix})` })
+        });
+        // Přidání výpravčího do stavu
+        addDispatcher(window.discordUser);
+        showDispatcherPanel(station, serverCode);
+    };
+}
+
+// Oprava: při odchodu ze služby odstranění výpravčího ze stavu
+function endShift() {
+    panel.style.animation = 'modalFadeOut 0.4s';
+    setTimeout(() => {
+        panel.remove();
+        clearInterval(timeInterval);
+    }, 350);
+    // Odeslat zprávu na Discord webhook
+    let username = window.currentUser?.username;
+    if (!username && window.localStorage) {
+        const userStr = localStorage.getItem('discord_user');
+        if (userStr) {
+            try {
+                const userObj = JSON.parse(userStr);
+                username = userObj.username;
+            } catch (e) {}
+        }
+        if (!username) {
+            username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+        }
+    }
+    fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: `:wave: **${username}** opustil stanici **${station.Name}** (${station.Prefix})` })
+    });
+    // Odstranění výpravčího ze stavu
+    removeDispatcher(window.discordUser.id);
 }
 
 
