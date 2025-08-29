@@ -1577,9 +1577,8 @@ function showDispatcherPanel(station, serverCode) {
             data.forEach(train => {
                 if (Array.isArray(train.timetable)) {
                     train.timetable.forEach((stop, idx) => {
-                        // Debug: vypiš stop objekt
-                        // console.log('Stop:', stop);
-                        if (stop.pointId == station.id) {
+                        // EDR data mají indexOfXPoint jako identifikátor stanice
+                        if (stop.indexOfXPoint == station.id) {
                             // Odjezd: pokud má departureTime
                             if (stop.departureTime) {
                                 departures.push({
