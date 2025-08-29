@@ -915,10 +915,20 @@ async function showTrainDetailModal(user, train) {
                 </div>
                 <div id=\"train-modal-time\" style=\"font-size:1.15em;color:#43b581;font-weight:bold;margin-left:auto;\"></div>
             </div>
-            <div id=\"train-detail-content\">
+            <div style="margin-bottom:12px;">
+                <b>Typ:</b> ${train.type || train.Type || '-'}<br>
+                <b>Rychlost:</b> ${train.speed || train.Speed || '-'} km/h<br>
+                <b>Max. rychlost:</b> ${train.maxSpeed || train.MaxSpeed || '-'} km/h<br>
+                <b>Vzdálenost:</b> ${train.distance || train.Distance ? (train.distance || train.Distance) + ' km' : '-'}<br>
+                <b>Sekvence vozů:</b> ${Array.isArray(train.Vehicles) ? train.Vehicles.map(v => (typeof v === 'object' ? (v.name || v.type || v.id || '-') : v)).join(', ') : '-'}<br>
+                <b>Předchozí stanice:</b> ${stops[1]?.nameForPerson || '-'}<br>
+                <b>Aktuální stanice:</b> ${stops[0]?.nameForPerson || '-'}<br>
+                <b>Další stanice:</b> ${stops[2]?.nameForPerson || '-'}
+            </div>
+            <div id="train-detail-content">
                 ${stationsHtml}
-                <div style=\"display:flex;gap:16px;justify-content:center;margin-top:32px;\">
-                    <button id=\"end-ride-btn\" class=\"profile-btn train-modal-btn-simrail\" type=\"button\">Ukončit jízdu</button>
+                <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
+                    <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail" type="button">Ukončit jízdu</button>
                 </div>
             </div>
         </div>
@@ -1729,8 +1739,9 @@ function showDispatcherPanel(station, serverCode) {
                     const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
                     return t >= now;
                 }).sort(sortByTime);
-                renderPaginatedTable('departure');
-                renderPaginatedTable('arrival');
+                // Zobraz pouze jednu sloučenou tabulku pro výpravčího
+                const containerId = 'dispatcher-departures';
+                renderDispatcherUnifiedTable(containerId, dispatcherData.departures, dispatcherData.arrivals);
             });
     }
     function renderPaginatedTable(type) {
