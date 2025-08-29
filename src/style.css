@@ -1,3 +1,42 @@
+/* Styl pro tabulku jízdního řádu vlaku v modalu */
+.train-timetable-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  margin-top: 8px;
+}
+.train-timetable-table th {
+  background: #23272a;
+  color: #ffe066;
+  font-size: 1.08em;
+  font-weight: bold;
+  padding: 10px 12px;
+  border-radius: 8px 8px 0 0;
+}
+.train-timetable-table td {
+  background: #23272a;
+  color: #fff;
+  font-size: 1.05em;
+  padding: 8px 12px;
+  border-bottom: 1px solid #333;
+  transition: background 0.2s;
+}
+.train-timetable-table tr {
+  transition: background 0.2s;
+}
+.train-timetable-table tr:hover td {
+  background: #2c2f33;
+}
+.train-timetable-table tr:first-child td {
+  border-top: none;
+}
+.train-timetable-table td:last-child {
+  font-weight: bold;
+}
+.train-timetable-table tr[style*='#ffe066'] td {
+  background: #ffe066 !important;
+  color: #23272a !important;
+}
 #work-modal {
  display: none;
  position: fixed;

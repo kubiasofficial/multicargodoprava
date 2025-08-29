@@ -621,33 +621,43 @@ async function showTrainDetailModal(user, train) {
     // Získání URL obrázku vlaku z pole Vehicles
     const trainImgSrc = getVehicleImage(train.Vehicles);
 
-    // Stanice HTML ve stylu SimRail UI
+    // Vylepšený jízdní řád vlaku jako tabulka
     let stationsHtml = '';
     if (stops.length > 0) {
         stationsHtml = `
-            <div style="display:flex;align-items:flex-start;gap:18px;margin-top:18px;">
-                <div style="flex-shrink:0;">${timelineSvg}</div>
-                <div style="flex:1;">
-                    <div style="font-size:1.25em;font-weight:bold;color:#1e2a78;background:#ffe066;padding:4px 12px;border-radius:8px 8px 0 0;box-shadow:0 2px 8px #23272a33;">
-                        ${train.StartStation}
-                    </div>
-                    ${stops.map((stop, idx) => {
-                        const delay = calculateDelayWithPosition(stop, idx+1);
-                        const delayHtml = getDelayHtml(delay);
-                        return `
-                            <div style="font-size:1.08em;color:#ffe066;background:#23272a;padding:6px 12px;border-radius:8px;margin:6px 0;display:flex;align-items:center;box-shadow:0 2px 8px #23272a22;">
-                                <span style="font-style:italic;color:#ffe066;">${stop.nameForPerson}</span>
-                                <span style="margin-left:14px;color:#fff;">${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : ''}${stop.departureTime ? ' - ' + stop.departureTime.split(' ')[1] : ''}</span>
-                                ${delayHtml}
-                                ${stop.platform ? `<span style="margin-left:12px;color:#aaa;">Nást.: ${stop.platform}</span>` : ''}
-                                ${stop.track ? `<span style="margin-left:8px;color:#aaa;">Kolej: ${stop.track}</span>` : ''}
-                            </div>
-                        `;
-                    }).join('')}
-                    <div style="font-size:1.25em;font-weight:bold;color:#1e2a78;background:#ffe066;padding:4px 12px;border-radius:0 0 8px 8px;box-shadow:0 2px 8px #23272a33;">
-                        ${train.EndStation}
-                    </div>
-                </div>
+            <div style="margin-top:18px;">
+                <table class="train-timetable-table" style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+                    <thead>
+                        <tr style="background:#23272a;color:#ffe066;font-size:1.08em;">
+                            <th>Stanice</th>
+                            <th>Příjezd</th>
+                            <th>Odjezd</th>
+                            <th>Nástupiště</th>
+                            <th>Kolej</th>
+                            <th>Zpoždění</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stops.map((stop, idx) => {
+                            const delay = calculateDelayWithPosition(stop, idx+1);
+                            const delayHtml = getDelayHtml(delay);
+                            const isCurrent = idx === 0;
+                            return `
+                                <tr style="background:${isCurrent ? '#ffe066' : '#23272a'};color:${isCurrent ? '#23272a' : '#fff'};font-weight:${isCurrent ? 'bold' : 'normal'};box-shadow:0 2px 8px #23272a22;">
+                                    <td style="padding:8px 12px;border-radius:8px 0 0 8px;">
+                                        ${isCurrent ? '<span title="Aktuální stanice" style="margin-right:6px;">🚩</span>' : ''}
+                                        ${stop.nameForPerson}
+                                    </td>
+                                    <td style="padding:8px 12px;">${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : '-'}</td>
+                                    <td style="padding:8px 12px;">${stop.departureTime ? stop.departureTime.split(' ')[1] : '-'}</td>
+                                    <td style="padding:8px 12px;">${stop.platform || '-'}</td>
+                                    <td style="padding:8px 12px;">${stop.track || '-'}</td>
+                                    <td style="padding:8px 12px;border-radius:0 8px 8px 0;">${delayHtml}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
             </div>
         `;
     } else {
