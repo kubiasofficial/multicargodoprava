@@ -1806,26 +1806,27 @@ function renderDispatcherUnifiedTable(containerId, departures, arrivals) {
         container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
         return;
     }
-    // Seřadit podle času (odjezd/příjezd)
+    // Seřadit podle času (odjezd/příjezd) a zobrazit jen prvních 8 vlaků
     allItems.sort((a, b) => {
         const ta = new Date(a.movement === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
         const tb = new Date(b.movement === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
         return ta - tb;
     });
-    let html = `<div style="overflow-x:auto;"><table class="dispatcher-table" style="min-width:1100px;width:100%;border-collapse:separate;border-spacing:0 6px;">`;
+    const visibleItems = allItems.slice(0, 8);
+    let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table\" style=\"min-width:1100px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;\">`;
     html += `<thead><tr>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;">Vlak</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Pohyb</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Čas</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Kolej</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Další stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Předchozí stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Typ</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;">Zpoždění</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:110px;">Vlak</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Pohyb</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:70px;">Čas</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:80px;">Kolej</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Další stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Předchozí stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Typ</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Zpoždění</th>`;
     html += `</tr></thead><tbody>`;
     const now = new Date();
-    allItems.forEach(({train, stop, track, nextStation, prevStation, movement}) => {
+    visibleItems.forEach(({train, stop, track, nextStation, prevStation, movement}) => {
         const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
         const trainName = train.trainName || train.TrainName || '';
         const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
@@ -1850,17 +1851,17 @@ function renderDispatcherUnifiedTable(containerId, departures, arrivals) {
             const planned = new Date(timeStr);
             if (Math.abs(new Date() - planned) <= 60000) highlight = true;
         }
-        html += `<tr class="dispatcher-row" style="background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;">`;
-        html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;" onclick="window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')})">${trainNo} <span style="color:${typeColor};font-weight:normal;">${trainName}</span></td>`;
-        html += `<td style="font-weight:bold;padding:7px 10px;color:${movement === 'Odjezd' ? '#43b581' : '#ffe066'};">${movement === 'Odjezd' ? '⬆️ Odjezd' : '⬇️ Příjezd'}</td>`;
-        html += `<td style="color:#fff;padding:7px 10px;">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
-        html += `<td style="color:#fff;padding:7px 10px;">${movement === 'Odjezd' ? endStation : startStation}</td>`;
-        html += `<td style="color:#ffe066;font-weight:bold;padding:7px 10px;">${track && track !== '-' ? track : '-'}</td>`;
-        html += `<td style="color:#43b581;font-weight:bold;padding:7px 10px;">${nextStation || '-'}</td>`;
-        html += `<td style="color:#43b581;font-weight:bold;padding:7px 10px;">${prevStation || '-'}</td>`;
-        html += `<td style="color:${typeColor};font-weight:bold;padding:7px 10px;">${typeLabel}</td>`;
-        html += `<td style="color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
-        html += `</tr>`;
+    html += `<tr class=\"dispatcher-row\" style=\"background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;\">`;
+    html += `<td style=\"color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;white-space:normal;word-break:break-word;text-align:left;\" onclick=\"window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')})\">${trainNo} <span style=\"color:${typeColor};font-weight:normal;\">${trainName}</span></td>`;
+    html += `<td style=\"font-weight:bold;padding:7px 10px;color:${movement === 'Odjezd' ? '#43b581' : '#ffe066'};white-space:normal;word-break:break-word;text-align:left;\">${movement === 'Odjezd' ? '⬆️ Odjezd' : '⬇️ Příjezd'}</td>`;
+    html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
+    html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${movement === 'Odjezd' ? endStation : startStation}</td>`;
+    html += `<td style=\"color:#ffe066;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${track && track !== '-' ? track : '-'}</td>`;
+    html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${nextStation || '-'}</td>`;
+    html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${prevStation || '-'}</td>`;
+    html += `<td style=\"color:${typeColor};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${typeLabel}</td>`;
+    html += `<td style=\"color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
+    html += `</tr>`;
     });
     html += `</tbody></table></div>`;
     container.innerHTML = html;
