@@ -1613,8 +1613,23 @@ function showDispatcherPanel(station, serverCode) {
                     });
                 }
             });
-            renderDispatcherTable('dispatcher-departures', departures, 'departure');
-            renderDispatcherTable('dispatcher-arrivals', arrivals, 'arrival');
+            // Seřadit podle času a omezit na max 8 vlaků
+            const now = new Date();
+            const sortByTime = (a, b) => {
+                const ta = new Date(a.stop.departureTime || a.stop.arrivalTime);
+                const tb = new Date(b.stop.departureTime || b.stop.arrivalTime);
+                return ta - tb;
+            };
+            const futureDepartures = departures.filter(d => {
+                const t = new Date(d.stop.departureTime || d.stop.arrivalTime);
+                return t >= now;
+            }).sort(sortByTime).slice(0, 8);
+            const futureArrivals = arrivals.filter(a => {
+                const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
+                return t >= now;
+            }).sort(sortByTime).slice(0, 8);
+            renderDispatcherTable('dispatcher-departures', futureDepartures, 'departure');
+            renderDispatcherTable('dispatcher-arrivals', futureArrivals, 'arrival');
         });
 }
 
