@@ -1346,6 +1346,13 @@ function showStationServerModal() {
                     div.style.cursor = 'not-allowed';
                 }
                 list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('station-servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+}
+
 // Modal pro výběr stanice na serveru
 function showStationListModal(serverCode) {
     let oldModal = document.getElementById('station-list-modal');
@@ -1412,16 +1419,25 @@ function showStationListModal(serverCode) {
                         </div>
                     `;
                     div.onclick = () => {
-                        if (isOccupied) {
-                            alert('Stanice je již obsazena!');
-                            return;
-                        }
                         modal.classList.remove('active');
                         setTimeout(() => modal.remove(), 300);
-                        showStationTakeoverModal(station, serverCode);
+                        showStationTakeoverModal(station, serverCode, isOccupied);
                     };
+                    list.appendChild(div);
+                });
+            }
+            renderStations();
+            searchInput.addEventListener('input', e => {
+                renderStations(e.target.value);
+            });
+        })
+        .catch(() => {
+            document.getElementById('stations-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst stanice.</div>';
+        });
+}
+
 // Modal pro převzetí stanice
-function showStationTakeoverModal(station, serverCode) {
+function showStationTakeoverModal(station, serverCode, isOccupied = false) {
     let oldModal = document.getElementById('station-takeover-modal');
     if (oldModal) oldModal.remove();
     const modal = document.createElement('div');
@@ -1430,7 +1446,10 @@ function showStationTakeoverModal(station, serverCode) {
     modal.innerHTML = `
         <div class="server-modal-content" style="max-width:420px;">
             <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Převzít stanici: ${station.Name}</h2>
+            <h2 style="text-align:center;margin-bottom:24px;">${isOccupied ? 'Stanice je obsazena' : 'Převzít stanici'}: ${station.Name}</h2>
+            <div style="text-align:center;margin-bottom:18px;color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
+                ${isOccupied ? 'Stanici aktuálně někdo obsluhuje. Pokud ji převezmete, může dojít k odpojení původního výpravčího.' : 'Stanice je volná.'}
+            </div>
             <div style="display:flex;gap:18px;justify-content:center;">
                 <button id="station-takeover-btn" class="profile-btn profile-btn-green" style="font-size:1.15em;">Převzít</button>
                 <button id="station-cancel-btn" class="profile-btn profile-btn-red" style="font-size:1.15em;">Zavřít</button>
@@ -1544,6 +1563,8 @@ function showDispatcherPanel(station, serverCode) {
         panel.querySelector('div').style.display = 'block';
         document.getElementById('dispatcher-minimized').style.display = 'none';
     };
+    // Stránkování - globální stav
+    window.dispatcherPages = { departures: 1, arrivals: 1 };
 
     // Ukončení směny
     document.getElementById('dispatcher-close').onclick = endShift;
@@ -1613,7 +1634,7 @@ function showDispatcherPanel(station, serverCode) {
                     });
                 }
             });
-            // Seřadit podle času a omezit na max 8 vlaků
+            // Seřadit podle času
             const now = new Date();
             const sortByTime = (a, b) => {
                 const ta = new Date(a.stop.departureTime || a.stop.arrivalTime);
@@ -1623,17 +1644,60 @@ function showDispatcherPanel(station, serverCode) {
             const futureDepartures = departures.filter(d => {
                 const t = new Date(d.stop.departureTime || d.stop.arrivalTime);
                 return t >= now;
-            }).sort(sortByTime).slice(0, 8);
+            }).sort(sortByTime);
             const futureArrivals = arrivals.filter(a => {
                 const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
                 return t >= now;
-            }).sort(sortByTime).slice(0, 8);
-            renderDispatcherTable('dispatcher-departures', futureDepartures, 'departure');
-            renderDispatcherTable('dispatcher-arrivals', futureArrivals, 'arrival');
+            }).sort(sortByTime);
+            // Stránkování
+            function renderPaginatedTable(type) {
+                const items = type === 'departure' ? futureDepartures : futureArrivals;
+                const page = window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals'];
+                const perPage = 8;
+                const totalPages = Math.max(1, Math.ceil(items.length / perPage));
+                const start = (page - 1) * perPage;
+                const pageItems = items.slice(start, start + perPage);
+                renderDispatcherTable(type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals', pageItems, type);
+                // Render pagination controls
+                const pagId = type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals';
+                let pagContainer = document.getElementById(pagId + '-pagination');
+                if (!pagContainer) {
+                    pagContainer = document.createElement('div');
+                    pagContainer.id = pagId + '-pagination';
+                    pagContainer.style = 'text-align:center;margin:8px 0;';
+                    document.getElementById(pagId).parentElement.appendChild(pagContainer);
+                }
+                pagContainer.innerHTML = '';
+                if (totalPages > 1) {
+                    const prevBtn = document.createElement('button');
+                    prevBtn.textContent = '◀';
+                    prevBtn.className = 'profile-btn';
+                    prevBtn.disabled = page === 1;
+                    prevBtn.onclick = () => {
+                        window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']--;
+                        renderPaginatedTable(type);
+                    };
+                    pagContainer.appendChild(prevBtn);
+                    const pageInfo = document.createElement('span');
+                    pageInfo.textContent = ` ${page} / ${totalPages} `;
+                    pageInfo.style = 'color:#fff;font-weight:bold;margin:0 8px;';
+                    pagContainer.appendChild(pageInfo);
+                    const nextBtn = document.createElement('button');
+                    nextBtn.textContent = '▶';
+                    nextBtn.className = 'profile-btn';
+                    nextBtn.disabled = page === totalPages;
+                    nextBtn.onclick = () => {
+                        window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']++;
+                        renderPaginatedTable(type);
+                    };
+                    pagContainer.appendChild(nextBtn);
+                }
+            }
+            renderPaginatedTable('departure');
+            renderPaginatedTable('arrival');
         });
 }
 
-// Render tabulky odjezdů/příjezdů
 function renderDispatcherTable(containerId, items, type) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1641,45 +1705,61 @@ function renderDispatcherTable(containerId, items, type) {
         container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
         return;
     }
-    let html = `<table style="width:100%;border-collapse:separate;border-spacing:0 6px;">`;
+    let html = `<table class="dispatcher-table" style="width:100%;border-collapse:separate;border-spacing:0 6px;">`;
     html += `<thead><tr>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;">Vlak</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Odjezd' : 'Příjezd'}</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Cílová stanice' : 'Z'} </th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Typ</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Zpoždění</th>`;
     html += `</tr></thead><tbody>`;
-    items.forEach(({train, stop}) => {
-        // Fallback pro trainNoLocal/trainNo/trainName
+    const now = new Date();
+    items.forEach(({train, stop, position}) => {
         const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
         const trainName = train.trainName || train.TrainName || '';
-        // Fallback pro stanice
         const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
         const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
-        html += `<tr style="background:rgba(44,47,51,0.92);transition:background 0.2s;">`;
-        html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;">${trainNo} <span style="color:#43b581;font-weight:normal;">${trainName}</span></td>`;
+        let typeLabel = 'Osobní';
+        let typeColor = '#43b581';
+        if (trainName.toLowerCase().includes('tlk') || trainName.toLowerCase().includes('eip') || trainName.toLowerCase().includes('rj') || trainName.toLowerCase().includes('ic')) {
+            typeLabel = 'Rychlík';
+            typeColor = '#ffb300';
+        } else if (trainName.toLowerCase().includes('mpe') || trainName.toLowerCase().includes('moe') || trainName.toLowerCase().includes('moj')) {
+            typeLabel = 'Nákladní';
+            typeColor = '#3fa7d6';
+        }
+        let delay = 0;
+        const timeStr = type === 'departure' ? stop.departureTime : stop.arrivalTime;
+        if (timeStr) {
+            const planned = new Date(timeStr);
+            delay = Math.floor((now - planned) / 60000);
+        }
+        let highlight = false;
+        if (timeStr) {
+            const planned = new Date(timeStr);
+            if (Math.abs(now - planned) <= 60000) highlight = true;
+        }
+        html += `<tr class="dispatcher-row" style="background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;">`;
+        html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;" onclick="window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')})">${trainNo} <span style="color:${typeColor};font-weight:normal;">${trainName}</span></td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? (stop.departureTime ? stop.departureTime.substring(11,16) : '-') : (stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-')}</td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? endStation : startStation}</td>`;
+        html += `<td style="color:${typeColor};font-weight:bold;padding:7px 10px;">${typeLabel}</td>`;
+        html += `<td style="color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
         html += `</tr>`;
     });
     html += `</tbody></table>`;
     container.innerHTML = html;
-}
-                    list.appendChild(div);
-                });
-            }
-            renderStations();
-            searchInput.addEventListener('input', e => {
-                renderStations(e.target.value);
-            });
-        })
-        .catch(() => {
-            document.getElementById('stations-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst stanice.</div>';
-        });
-}
-            });
-        })
-        .catch(() => {
-            document.getElementById('station-servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
-        });
+    // Responsivní styl
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @media (max-width: 900px) {
+            .dispatcher-table th, .dispatcher-table td { font-size: 0.95em; padding: 5px 4px; }
+        }
+        @media (max-width: 600px) {
+            .dispatcher-table th, .dispatcher-table td { font-size: 0.85em; padding: 3px 2px; }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
@@ -1750,8 +1830,6 @@ document.addEventListener('click', function (e) {
     }
 });
 
-// Základní funkce pro zobrazení modalu s výběrem serveru
-// ...existing code...
 // Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
 function getVehicleImage(vehicles) {
     // Pokud není pole nebo je prázdné, vrať defaultní obrázek
