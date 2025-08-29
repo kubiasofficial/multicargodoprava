@@ -7,8 +7,17 @@ export default async function handler(req, res) {
         url = `https://api1.aws.simrail.eu:8082/api/getAllTimetables?serverCode=${serverCode}${train ? `&train=${train}` : ''}`;
     }
     try {
+        console.log('Proxying to:', url);
         const response = await fetch(url);
-        const data = await response.json();
+        const text = await response.text();
+        console.log('SimRail API response:', text.slice(0, 500)); // log only first 500 chars
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (jsonErr) {
+            res.status(502).json({ error: 'Invalid JSON from SimRail API', details: text });
+            return;
+        }
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.status(200).json(data);
     } catch (err) {
