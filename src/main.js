@@ -1076,13 +1076,7 @@ function showStationServerModal() {
 }
 
 // Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
-function getDelayHtml(delay) {
-    if (delay > 0) {
-        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
-    } else {
-        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
-    }
-}
+// ...existing code...
 
 // Přidej globální styl pro tabulky a boxy
 (function addCustomTableStyles() {
