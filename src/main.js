@@ -1369,13 +1369,13 @@ function showStationListModal(serverCode) {
                 const div = document.createElement('div');
                 div.className = 'server-card';
                 div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
-                div.style.background = isOccupied ? 'linear-gradient(90deg, #23272a 80%, #f0474722 100%)' : 'linear-gradient(90deg, #23272a 80%, #43b58122 100%)';
+                div.style.background = `${isOccupied ? 'linear-gradient(90deg, #23272a 80%, #f0474722 100%)' : 'linear-gradient(90deg, #23272a 80%, #43b58122 100%)'}, url('${station.MainImageURL}') center center/cover no-repeat`;
                 div.innerHTML = `
-                    <div class="server-header">
+                    <div class="server-header" style="background:rgba(44,47,51,0.85);border-radius:12px 12px 0 0;padding:8px 12px;">
                         <span>${station.Name}</span>
                         <span class="server-region">${station.Prefix}</span>
                     </div>
-                    <div class="server-info">
+                    <div class="server-info" style="background:rgba(44,47,51,0.85);border-radius:0 0 12px 12px;padding:8px 12px;">
                         <span class="server-status" style="color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
                             ${isOccupied ? 'Obsazeno' : 'Volná'}
                         </span>
