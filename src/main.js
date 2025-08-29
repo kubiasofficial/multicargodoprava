@@ -1,8 +1,3 @@
-            // Debug: vypiš station.id a všechny indexOfXPoint z timetable prvního vlaku
-            if (data.length > 0 && Array.isArray(data[0].timetable)) {
-                console.log('Aktuální station.id:', station.id);
-                console.log('indexOfXPoint v timetable prvního vlaku:', data[0].timetable.map(stop => stop.indexOfXPoint));
-            }
 // Funkce pro zobrazení modalu s výběrem serveru a následně vlaků
 function showServerModal() {
     let oldModal = document.getElementById('server-select-modal');
