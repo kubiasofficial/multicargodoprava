@@ -257,7 +257,7 @@ function setPage(page) {
                                                                                     <tr>
                                                                                         <th style="text-align:left;">Uživatel</th>
                                                                                         <th style="text-align:left;">Vlak</th>
-                                                                                        <th style="text-align:left;">Čas</th>
+                                                                                        <th style="text-align:left;">Stanice</th>
                                                                                     </tr>
                                                                                 </thead>
                                                                                 <tbody></tbody>
@@ -304,11 +304,27 @@ function setPage(page) {
                                                                                                             } else {
                                                                                                                 avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
                                                                                                             }
+                                                                                                            // Získání aktuální stanice vlaku
+                                                                                                            let currentStation = '-';
+                                                                                                            if (val.trainNo && window.trainTimetables && window.trainTimetables[val.trainNo]) {
+                                                                                                                const timetable = window.trainTimetables[val.trainNo];
+                                                                                                                if (Array.isArray(timetable) && timetable.length > 0) {
+                                                                                                                    const now = new Date();
+                                                                                                                    let found = timetable.find(stop => {
+                                                                                                                        const timeStr = stop.departureTime || stop.arrivalTime;
+                                                                                                                        if (!timeStr) return false;
+                                                                                                                        const time = new Date(timeStr);
+                                                                                                                        return time > now;
+                                                                                                                    });
+                                                                                                                    if (!found) found = timetable[timetable.length-1];
+                                                                                                                    if (found && found.nameForPerson) currentStation = found.nameForPerson;
+                                                                                                                }
+                                                                                                            }
                                                                                                             const tr = document.createElement('tr');
                                                                                                             tr.innerHTML = `
                                                                                                                 <td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td>
-                                                                                                                <td style="text-align:left;">${val.trainNo || '-'}</td>
-                                                                                                                <td style="text-align:left;">${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
+                                                                                                                <td style="text-align:left;">${val.trainNo || '-'} </td>
+                                                                                                                <td style="text-align:left;">${currentStation}</td>
                                                                                                             `;
                                                                                                             tbody.appendChild(tr);
                                                                                                         });
@@ -1306,7 +1322,13 @@ function showStationServerModal() {
 }
 
 // Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
-// ...existing code...
+function getDelayHtml(delay) {
+    if (delay > 0) {
+        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
+    } else {
+        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
+    }
+}
 
 // Přidej globální styl pro tabulky a boxy
 (function addCustomTableStyles() {
@@ -1388,74 +1410,6 @@ function getVehicleImage(vehicles) {
     // Defaultní obrázek
     return '/Pictures/train_default.png';
 }
-
-// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
-function getDelayHtml(delay) {
-    if (delay > 0) {
-        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
-    } else {
-        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
-    }
-}
-
-// Přidej globální styl pro tabulky a boxy
-(function addCustomTableStyles() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .tables-vertical-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 32px;
-        }
-        .employee-table-container, .activity-table-container {
-            background: rgba(44,47,51,0.92);
-            border-radius: 18px;
-            box-shadow: 0 8px 32px #23272a99;
-            padding: 32px 28px;
-            max-width: 600px;
-            width: 100%;
-        }
-        .employee-table th, .activity-table th {
-            font-size: 1.1em;
-            color: #ffe066;
-            background: #23272a;
-            padding: 12px 0;
-        }
-        .employee-table td, .activity-table td {
-            font-size: 1em;
-            color: #fff;
-            padding: 10px 0;
-        }
-        .employee-table tr, .activity-table tr {
-            transition: background 0.2s;
-        }
-        .employee-table tr:hover, .activity-table tr:hover {
-            background: #2c2f33;
-        }
-        .employee-table, .activity-table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        .employee-table-container h2, .activity-table-container h2 {
-            font-size: 2em;
-            color: #fff;
-            text-align: center;
-            margin-bottom: 18px;
-            font-weight: bold;
-        }
-    `;
-    document.head.appendChild(style);
-})();
-
-// Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
-document.addEventListener('click', function (e) {
-    const btn = e.target.closest('#jizda-btn');
-    if (btn) {
-        e.preventDefault();
-        showServerModal();
-    }
-});
 
 
 
