@@ -1402,9 +1402,197 @@ function showStationListModal(serverCode) {
                         }
                         modal.classList.remove('active');
                         setTimeout(() => modal.remove(), 300);
-                        // Zde můžeš pokračovat s výběrem nebo akcí pro stanici
-                        alert(`Vybral jsi stanici: ${station.Name}`);
+                        showStationTakeoverModal(station, serverCode);
                     };
+// Modal pro převzetí stanice
+function showStationTakeoverModal(station, serverCode) {
+    let oldModal = document.getElementById('station-takeover-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'station-takeover-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:420px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Převzít stanici: ${station.Name}</h2>
+            <div style="display:flex;gap:18px;justify-content:center;">
+                <button id="station-takeover-btn" class="profile-btn profile-btn-green" style="font-size:1.15em;">Převzít</button>
+                <button id="station-cancel-btn" class="profile-btn profile-btn-red" style="font-size:1.15em;">Zavřít</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+    document.getElementById('station-cancel-btn').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+    document.getElementById('station-takeover-btn').onclick = async () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+        // Odeslat zprávu na Discord webhook
+        const username = window.currentUser?.username || 'Neznámý uživatel';
+        fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `:train2: **${username}** převzal stanici **${station.Name}** (${station.Prefix})` })
+        });
+        showDispatcherPanel(station, serverCode);
+    };
+}
+
+// Panel výpravčího
+function showDispatcherPanel(station, serverCode) {
+    let oldPanel = document.getElementById('dispatcher-panel');
+    if (oldPanel) oldPanel.remove();
+    const panel = document.createElement('div');
+    panel.id = 'dispatcher-panel';
+    panel.style.position = 'fixed';
+    panel.style.top = '0';
+    panel.style.left = '0';
+    panel.style.width = '100vw';
+    panel.style.height = '100vh';
+    panel.style.background = 'rgba(24,26,32,0.98)';
+    panel.style.zIndex = '10002';
+    panel.style.display = 'flex';
+    panel.style.flexDirection = 'column';
+    panel.style.justifyContent = 'center';
+    panel.style.alignItems = 'center';
+    panel.style.animation = 'modalFadeIn 0.4s';
+    panel.innerHTML = `
+        <div style="position:relative;max-width:1100px;width:96vw;background:rgba(44,47,51,0.98);border-radius:24px;box-shadow:0 8px 40px #23272a99;padding:38px 38px 32px 38px;">
+            <span id="dispatcher-minimize" style="position:absolute;top:18px;right:54px;font-size:2.2em;color:#fff;cursor:pointer;z-index:2;transition:color 0.2s;">&#8211;</span>
+            <span id="dispatcher-close" style="position:absolute;top:18px;right:18px;font-size:2.2em;color:#fff;cursor:pointer;z-index:2;transition:color 0.2s;">&times;</span>
+            <div style="text-align:center;margin-bottom:18px;">
+                <span style="font-size:2.2em;font-weight:bold;color:#ffe066;text-shadow:0 2px 12px #23272a;">${station.Name}</span>
+            </div>
+            <div style="text-align:center;margin-bottom:18px;">
+                <span id="dispatcher-time" style="font-size:1.5em;color:#fff;font-weight:bold;letter-spacing:2px;text-shadow:0 2px 8px #23272a;"></span>
+            </div>
+            <div style="display:flex;gap:38px;justify-content:center;align-items:flex-start;">
+                <div style="flex:1;min-width:320px;">
+                    <h3 style="color:#43b581;text-align:center;margin-bottom:12px;font-size:1.3em;">Odjezdy</h3>
+                    <div id="dispatcher-departures" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
+                </div>
+                <div style="flex:1;min-width:320px;">
+                    <h3 style="color:#ffe066;text-align:center;margin-bottom:12px;font-size:1.3em;">Příjezdy</h3>
+                    <div id="dispatcher-arrivals" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
+                </div>
+            </div>
+            <div style="text-align:right;margin-top:32px;">
+                <button id="dispatcher-end" class="profile-btn profile-btn-red" style="font-size:1.15em;">Ukončit směnu</button>
+            </div>
+        </div>
+        <div id="dispatcher-minimized" style="display:none;position:fixed;bottom:32px;right:32px;z-index:10003;">
+            <button id="dispatcher-restore" class="profile-btn profile-btn-green" style="font-size:1.15em;padding:12px 32px;">Obnovit panel výpravčího</button>
+        </div>
+    `;
+    document.body.appendChild(panel);
+
+    // Animace fade-in
+    setTimeout(() => { panel.style.opacity = '1'; }, 10);
+
+    // Živý čas
+    function updateTime() {
+        const el = document.getElementById('dispatcher-time');
+        if (el) {
+            const now = new Date();
+            el.textContent = now.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+    }
+    updateTime();
+    const timeInterval = setInterval(updateTime, 1000);
+
+    // Minimalizace
+    document.getElementById('dispatcher-minimize').onclick = () => {
+        panel.querySelector('div').style.display = 'none';
+        document.getElementById('dispatcher-minimized').style.display = 'block';
+    };
+    document.getElementById('dispatcher-restore').onclick = () => {
+        panel.querySelector('div').style.display = 'block';
+        document.getElementById('dispatcher-minimized').style.display = 'none';
+    };
+
+    // Ukončení směny
+    document.getElementById('dispatcher-close').onclick = endShift;
+    document.getElementById('dispatcher-end').onclick = endShift;
+    function endShift() {
+        panel.style.animation = 'modalFadeOut 0.4s';
+        setTimeout(() => {
+            panel.remove();
+            clearInterval(timeInterval);
+        }, 350);
+        // Odeslat zprávu na Discord webhook
+        const username = window.currentUser?.username || 'Neznámý uživatel';
+        fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `:wave: **${username}** opustil stanici **${station.Name}** (${station.Prefix})` })
+        });
+    }
+
+    // Načtení dat pro tabulky odjezdů/příjezdů
+    fetch(`https://api1.aws.simrail.eu:8082/api/getEDRTimetables?serverCode=${serverCode}`)
+        .then(res => res.json())
+        .then(data => {
+            // Filtruj vlaky, které mají v timetable danou stanici
+            const departures = [];
+            const arrivals = [];
+            data.forEach(train => {
+                if (Array.isArray(train.timetable)) {
+                    train.timetable.forEach((stop, idx) => {
+                        if (stop.pointId == station.id) {
+                            // Odjezd: pokud má departureTime
+                            if (stop.departureTime) {
+                                departures.push({
+                                    train: train,
+                                    stop: stop
+                                });
+                            }
+                            // Příjezd: pokud má arrivalTime
+                            if (stop.arrivalTime) {
+                                arrivals.push({
+                                    train: train,
+                                    stop: stop
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+            renderDispatcherTable('dispatcher-departures', departures, 'departure');
+            renderDispatcherTable('dispatcher-arrivals', arrivals, 'arrival');
+        });
+}
+
+// Render tabulky odjezdů/příjezdů
+function renderDispatcherTable(containerId, items, type) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!items || items.length === 0) {
+        container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
+        return;
+    }
+    let html = `<table style="width:100%;border-collapse:separate;border-spacing:0 6px;">`;
+    html += `<thead><tr>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;">Vlak</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Odjezd' : 'Příjezd'}</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Cílová stanice' : 'Z'} </th>`;
+    html += `</tr></thead><tbody>`;
+    items.forEach(({train, stop}) => {
+        html += `<tr style="background:rgba(44,47,51,0.92);transition:background 0.2s;">`;
+        html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;">${train.trainNoLocal} <span style="color:#43b581;font-weight:normal;">${train.trainName||''}</span></td>`;
+        html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? (stop.departureTime ? stop.departureTime.substring(11,16) : '-') : (stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-')}</td>`;
+        html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? train.endStation : train.startStation}</td>`;
+        html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
                     list.appendChild(div);
                 });
             }
