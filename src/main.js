@@ -1380,19 +1380,19 @@ function showStationListModal(serverCode) {
                     const div = document.createElement('div');
                     div.className = 'server-card';
                     div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
-                    div.style.background = `${isOccupied ? 'linear-gradient(90deg, #23272a 80%, #f0474722 100%)' : 'linear-gradient(90deg, #23272a 80%, #43b58122 100%)'}, url('${station.MainImageURL}') center center/cover no-repeat`;
+                    div.style.background = `url('${station.MainImageURL}') center center/cover no-repeat`;
                     div.style.position = 'relative';
                     div.innerHTML = `
-                        <div style='position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(24,26,32,0.68);border-radius:14px;z-index:1;'></div>
-                        <div class="server-header" style="background:rgba(44,47,51,0.85);border-radius:12px 12px 0 0;padding:8px 12px;position:relative;z-index:2;">
-                            <span>${station.Name}</span>
-                            <span class="server-region">${station.Prefix}</span>
+                        <div style="position:absolute;top:12px;left:16px;z-index:2;text-align:left;">
+                            <span style="font-size:1.25em;font-weight:bold;color:#fff;text-shadow:0 2px 8px #23272a;">${station.Name}</span>
                         </div>
-                        <div class="server-info" style="background:rgba(44,47,51,0.85);border-radius:0 0 12px 12px;padding:8px 12px;position:relative;z-index:2;">
-                            <span class="server-status" style="color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
+                        <div style="position:absolute;bottom:12px;left:16px;z-index:2;text-align:left;">
+                            <span style="font-size:1.08em;font-weight:bold;color:${isOccupied ? '#f04747' : '#43b581'};text-shadow:0 2px 8px #23272a;">
                                 ${isOccupied ? 'Obsazeno' : 'Volná'}
                             </span>
-                            <span style="margin-left:16px;color:#aaa;">Obtížnost: ${station.DifficultyLevel}</span>
+                        </div>
+                        <div style="position:absolute;bottom:12px;right:16px;z-index:2;text-align:right;">
+                            <span style="font-size:1.08em;color:#ffe066;font-weight:bold;text-shadow:0 2px 8px #23272a;">Obtížnost: ${station.DifficultyLevel}</span>
                         </div>
                     `;
                     div.onclick = () => {
