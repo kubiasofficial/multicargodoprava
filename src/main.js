@@ -265,35 +265,43 @@ function setPage(page) {
                                         </div>
                                     </div>
                                 `;
-                                // Zaměstnanci ve službě
-                                db.ref('users').orderByChild('working').equalTo(true).once('value').then(snap => {
-                                    const tbody = document.querySelector('#employee-table tbody');
-                                    tbody.innerHTML = '';
-                                    snap.forEach(child => {
-                                        const val = child.val();
-                                        const tr = document.createElement('tr');
-                                        tr.innerHTML = `
-                                            <td>${val.username || child.key}</td>
-                                            <td>${val.role || '-'}</td>
-                                        `;
-                                        tbody.appendChild(tr);
-                                    });
-                                });
-                                // Aktivní jízdy
-                                db.ref('activity').once('value').then(snap => {
-                                    const tbody = document.querySelector('#activity-table tbody');
-                                    tbody.innerHTML = '';
-                                    snap.forEach(child => {
-                                        const val = child.val();
-                                        const tr = document.createElement('tr');
-                                        tr.innerHTML = `
-                                            <td>${val.username || child.key}</td>
-                                            <td>${val.trainNo || '-'}</td>
-                                            <td>${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
-                                        `;
-                                        tbody.appendChild(tr);
-                                    });
-                                });
+                                                // Živá aktualizace zaměstnanců ve službě
+                                                if (window.employeesListener) window.employeesListener.off();
+                                                window.employeesListener = db.ref('users').orderByChild('working').equalTo(true);
+                                                window.employeesListener.on('value', snap => {
+                                                    const tbody = document.querySelector('#employee-table tbody');
+                                                    if (tbody) {
+                                                        tbody.innerHTML = '';
+                                                        snap.forEach(child => {
+                                                            const val = child.val();
+                                                            const tr = document.createElement('tr');
+                                                            tr.innerHTML = `
+                                                                <td>${val.username || child.key}</td>
+                                                                <td>${val.role || '-'}</td>
+                                                            `;
+                                                            tbody.appendChild(tr);
+                                                        });
+                                                    }
+                                                });
+                                                // Živá aktualizace aktivních jízd
+                                                if (window.activityListener) window.activityListener.off();
+                                                window.activityListener = db.ref('activity');
+                                                window.activityListener.on('value', snap => {
+                                                    const tbody = document.querySelector('#activity-table tbody');
+                                                    if (tbody) {
+                                                        tbody.innerHTML = '';
+                                                        snap.forEach(child => {
+                                                            const val = child.val();
+                                                            const tr = document.createElement('tr');
+                                                            tr.innerHTML = `
+                                                                <td>${val.username || child.key}</td>
+                                                                <td>${val.trainNo || '-'}</td>
+                                                                <td>${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
+                                                            `;
+                                                            tbody.appendChild(tr);
+                                                        });
+                                                    }
+                                                });
                                 break;
             default:
                 pageTitle.textContent = 'Přehled';
@@ -315,41 +323,76 @@ navBtns.forEach(btn => {
 
 // Discord OAuth2 login logic
 window.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('discord-modal');
-    const hash = window.location.hash;
-    let accessToken = null;
-    if (hash && hash.includes('access_token')) {
-        const params = new URLSearchParams(hash.substring(1));
-        accessToken = params.get('access_token');
-        // Ulož accessToken do localStorage pro další načtení
-        localStorage.setItem('discord_access_token', accessToken);
-        // Odstraň hash z URL pro čistotu (bez reloadu)
-        window.location.hash = '';
-    } else {
-        // Zkus načíst accessToken z localStorage
-        accessToken = localStorage.getItem('discord_access_token');
-    }
+        const modal = document.getElementById('discord-modal');
+        const hash = window.location.hash;
+        let accessToken = null;
+        if (hash && hash.includes('access_token')) {
+                const params = new URLSearchParams(hash.substring(1));
+                accessToken = params.get('access_token');
+                localStorage.setItem('discord_access_token', accessToken);
+                window.location.hash = '';
+        } else {
+                accessToken = localStorage.getItem('discord_access_token');
+        }
 
-    if (accessToken) {
-        fetch('https://discord.com/api/users/@me', {
-            headers: {
-                'Authorization': 'Bearer ' + accessToken
-            }
-        })
-            .then(res => res.json())
-            .then(user => {
-                if (modal) modal.style.display = 'none';
-                showDiscordProfile(user);
-                // Ulož uživatele do localStorage a nastav do window.discordUser
-                window.discordUser = user;
-                localStorage.setItem('discord_user', JSON.stringify(user));
-            })
-            .catch(() => {
+        if (accessToken) {
+                fetch('https://discord.com/api/users/@me', {
+                        headers: {
+                                'Authorization': 'Bearer ' + accessToken
+                        }
+                })
+                        .then(res => res.json())
+                        .then(user => {
+                                if (modal) modal.style.display = 'none';
+                                showDiscordProfile(user);
+                                window.discordUser = user;
+                                localStorage.setItem('discord_user', JSON.stringify(user));
+                        })
+                        .catch(() => {
+                                if (modal) modal.style.display = 'flex';
+                        });
+        } else {
                 if (modal) modal.style.display = 'flex';
-            });
-    } else {
-        if (modal) modal.style.display = 'flex';
-    }
+        }
+
+        // Pokud jsme na stránce Přehled, zobraz tabulky hned po načtení
+        if (document.querySelector('.page-title')?.textContent === 'Přehled') {
+                setTimeout(() => {
+                        // Zaměstnanci ve službě
+                        db.ref('users').orderByChild('working').equalTo(true).once('value').then(snap => {
+                            const tbody = document.querySelector('#employee-table tbody');
+                            if (tbody) {
+                                tbody.innerHTML = '';
+                                snap.forEach(child => {
+                                    const val = child.val();
+                                    const tr = document.createElement('tr');
+                                    tr.innerHTML = `
+                                        <td>${val.username || child.key}</td>
+                                        <td>${val.role || '-'}</td>
+                                    `;
+                                    tbody.appendChild(tr);
+                                });
+                            }
+                        });
+                        // Aktivní jízdy
+                        db.ref('activity').once('value').then(snap => {
+                            const tbody = document.querySelector('#activity-table tbody');
+                            if (tbody) {
+                                tbody.innerHTML = '';
+                                snap.forEach(child => {
+                                    const val = child.val();
+                                    const tr = document.createElement('tr');
+                                    tr.innerHTML = `
+                                        <td>${val.username || child.key}</td>
+                                        <td>${val.trainNo || '-'}</td>
+                                        <td>${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
+                                    `;
+                                    tbody.appendChild(tr);
+                                });
+                            }
+                        });
+                }, 400);
+        }
 });
 
 // Vždy při načtení stránky zkus obnovit Discord uživatele z localStorage
