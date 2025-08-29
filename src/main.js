@@ -1608,10 +1608,16 @@ function renderDispatcherTable(containerId, items, type) {
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Cílová stanice' : 'Z'} </th>`;
     html += `</tr></thead><tbody>`;
     items.forEach(({train, stop}) => {
+        // Fallback pro trainNoLocal/trainNo/trainName
+        const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
+        const trainName = train.trainName || train.TrainName || '';
+        // Fallback pro stanice
+        const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
+        const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
         html += `<tr style="background:rgba(44,47,51,0.92);transition:background 0.2s;">`;
-        html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;">${train.trainNoLocal} <span style="color:#43b581;font-weight:normal;">${train.trainName||''}</span></td>`;
+        html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;">${trainNo} <span style="color:#43b581;font-weight:normal;">${trainName}</span></td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? (stop.departureTime ? stop.departureTime.substring(11,16) : '-') : (stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-')}</td>`;
-        html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? train.endStation : train.startStation}</td>`;
+        html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? endStation : startStation}</td>`;
         html += `</tr>`;
     });
     html += `</tbody></table>`;
