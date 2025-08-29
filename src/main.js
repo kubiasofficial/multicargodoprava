@@ -626,9 +626,9 @@ async function showTrainDetailModal(user, train) {
     if (stops.length > 0) {
         stationsHtml = `
             <div style="margin-top:18px;">
-                <table class="train-timetable-table" style="width:100%;border-collapse:separate;border-spacing:0 8px;">
+                <table class="train-timetable-table">
                     <thead>
-                        <tr style="background:#23272a;color:#ffe066;font-size:1.08em;">
+                        <tr>
                             <th>Stanice</th>
                             <th>Příjezd</th>
                             <th>Odjezd</th>
@@ -640,19 +640,21 @@ async function showTrainDetailModal(user, train) {
                     <tbody>
                         ${stops.map((stop, idx) => {
                             const delay = calculateDelayWithPosition(stop, idx+1);
-                            const delayHtml = getDelayHtml(delay);
+                            const delayHtml = delay > 0
+                                ? `<span class=\"delay-blink\">+${delay} min</span>`
+                                : `<span class=\"delay-ok\">Včas</span>`;
                             const isCurrent = idx === 0;
                             return `
-                                <tr style="background:${isCurrent ? '#ffe066' : '#23272a'};color:${isCurrent ? '#23272a' : '#fff'};font-weight:${isCurrent ? 'bold' : 'normal'};box-shadow:0 2px 8px #23272a22;">
-                                    <td style="padding:8px 12px;border-radius:8px 0 0 8px;">
-                                        ${isCurrent ? '<span title="Aktuální stanice" style="margin-right:6px;">🚩</span>' : ''}
+                                <tr style="${isCurrent ? 'background:#e6ffe6;color:#23272a;font-weight:bold;' : ''}">
+                                    <td style="border-radius:8px 0 0 8px;">
+                                        ${isCurrent ? '<span class=\"station-icon\" title=\"Aktuální stanice\">●</span>' : ''}
                                         ${stop.nameForPerson}
                                     </td>
-                                    <td style="padding:8px 12px;">${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : '-'}</td>
-                                    <td style="padding:8px 12px;">${stop.departureTime ? stop.departureTime.split(' ')[1] : '-'}</td>
-                                    <td style="padding:8px 12px;">${stop.platform || '-'}</td>
-                                    <td style="padding:8px 12px;">${stop.track || '-'}</td>
-                                    <td style="padding:8px 12px;border-radius:0 8px 8px 0;">${delayHtml}</td>
+                                    <td>${stop.arrivalTime ? stop.arrivalTime.split(' ')[1] : '-'}</td>
+                                    <td>${stop.departureTime ? stop.departureTime.split(' ')[1] : '-'}</td>
+                                    <td>${stop.platform || '-'}</td>
+                                    <td>${stop.track || '-'}</td>
+                                    <td style="border-radius:0 8px 8px 0;">${delayHtml}</td>
                                 </tr>
                             `;
                         }).join('')}
@@ -661,25 +663,27 @@ async function showTrainDetailModal(user, train) {
             </div>
         `;
     } else {
-        stationsHtml = `<div style="margin-top:18px;color:#aaa;">Jízdní řád není dostupný.</div>`;
+        stationsHtml = `<div style=\"margin-top:18px;color:#aaa;\">Jízdní řád není dostupný.</div>`;
     }
 
-    // Modal HTML (SimRail styl + vlastní barvy)
+    // Modal HTML (moderní styl)
     modal.innerHTML = `
-        <div class="server-modal-content train-modal-simrail" style="max-width:600px;min-width:340px;position:relative;background:rgba(44,47,51,0.92);border-radius:18px;box-shadow:0 8px 32px #23272a99;padding:32px 28px;">
-            <span class="server-modal-close" id="train-modal-close" style="font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;">&times;</span>
-            <span id="train-modal-minimize" style="font-size:1.8em;top:18px;right:54px;position:absolute;cursor:pointer;color:#ffe066;" title="Minimalizovat">_</span>
-            <div style="display:flex;align-items:center;gap:22px;margin-bottom:18px;">
-                <img src="${trainImgSrc}" alt="Vlak" style="width:64px;height:64px;border-radius:12px;background:#222;box-shadow:0 2px 8px #23272a33;">
-                <div style="font-size:2.8em;font-weight:bold;color:#ffe066;background:#23272a;padding:12px 24px;border-radius:16px;box-shadow:0 2px 12px #23272a;">
+        <div class=\"server-modal-content train-modal-simrail\" style=\"max-width:600px;min-width:340px;position:relative;background:rgba(44,47,51,0.98);border-radius:18px;box-shadow:0 8px 32px #23272a99;padding:32px 28px;\">
+            <span class=\"server-modal-close\" id=\"train-modal-close\" style=\"font-size:1.8em;top:18px;right:24px;position:absolute;cursor:pointer;color:#ffe066;\">&times;</span>
+            <span id=\"train-modal-minimize\" style=\"font-size:1.8em;top:18px;right:54px;position:absolute;cursor:pointer;color:#ffe066;\" title=\"Minimalizovat\">_</span>
+            <div style=\"display:flex;align-items:center;gap:18px;margin-bottom:18px;\">
+                <div class=\"train-modal-img-bubble\">
+                    <img src=\"${trainImgSrc}\" alt=\"Vlak\">
+                </div>
+                <div style=\"font-size:2.3em;font-weight:bold;color:#ffe066;background:#23272a;padding:10px 22px;border-radius:16px;box-shadow:0 2px 12px #23272a;\">
                     ${train.TrainNoLocal}
                 </div>
-                <div id="train-modal-time" style="font-size:1.25em;color:#43b581;font-weight:bold;margin-left:auto;"></div>
+                <div id=\"train-modal-time\" style=\"font-size:1.15em;color:#43b581;font-weight:bold;margin-left:auto;\"></div>
             </div>
-            <div id="train-detail-content">
+            <div id=\"train-detail-content\">
                 ${stationsHtml}
-                <div style="display:flex;gap:16px;justify-content:center;margin-top:32px;">
-                    <button id="end-ride-btn" class="profile-btn train-modal-btn-simrail" type="button">Ukončit jízdu</button>
+                <div style=\"display:flex;gap:16px;justify-content:center;margin-top:32px;\">
+                    <button id=\"end-ride-btn\" class=\"profile-btn train-modal-btn-simrail\" type=\"button\">Ukončit jízdu</button>
                 </div>
             </div>
         </div>

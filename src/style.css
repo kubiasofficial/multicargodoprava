@@ -1,3 +1,88 @@
+.train-timetable-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  margin-top: 8px;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px #23272a55;
+  overflow: hidden;
+  background: rgba(44,47,51,0.98);
+}
+.train-timetable-table th {
+  background: #23272a;
+  color: #ffe066;
+  font-size: 1.05em;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid #23272a;
+}
+.train-timetable-table td {
+  background: transparent;
+  color: #fff;
+  font-size: 0.98em;
+  padding: 7px 10px;
+  border-bottom: 1px solid #23272a44;
+  transition: background 0.2s;
+}
+.train-timetable-table tr {
+  transition: background 0.2s;
+}
+.train-timetable-table tr:hover td {
+  background: #23272a88;
+}
+.train-timetable-table td:last-child {
+  font-weight: bold;
+}
+.train-timetable-table tr[style*='#e6ffe6'] td {
+  background: #e6ffe6 !important;
+  color: #23272a !important;
+}
+.train-timetable-table .delay-blink {
+  background: rgba(240,71,71,0.18) !important;
+  color: #f04747 !important;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-weight: bold;
+  font-size: 0.98em;
+}
+.train-timetable-table .delay-ok {
+  background: rgba(67,181,129,0.18) !important;
+  color: #43b581 !important;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font-weight: bold;
+  font-size: 0.98em;
+}
+.train-timetable-table .station-icon {
+  font-size: 1.1em;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.train-timetable-table tr:first-child td {
+  border-top: none;
+}
+.train-timetable-table tr:last-child td {
+  border-bottom: none;
+}
+.train-modal-img-bubble {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #23272a;
+  box-shadow: 0 2px 12px #23272a55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-right: 18px;
+}
+.train-modal-img-bubble img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 50%;
+}
 /* Styl pro tabulku jízdního řádu vlaku v modalu */
 .train-timetable-table {
   width: 100%;
