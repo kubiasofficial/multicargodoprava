@@ -1593,8 +1593,8 @@ function showDispatcherPanel(station, serverCode) {
             data.forEach(train => {
                 if (Array.isArray(train.timetable)) {
                     train.timetable.forEach((stop, idx) => {
-                        // EDR data mají indexOfXPoint jako identifikátor stanice
-                        if (stop.indexOfXPoint == station.id) {
+                        // Porovnávej podle názvu stanice, ne podle id
+                        if (stop.nameForPerson === station.Name) {
                             // Odjezd: pokud má departureTime
                             if (stop.departureTime) {
                                 departures.push({
