@@ -376,10 +376,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash;
         let accessToken = null;
         if (hash && hash.includes('access_token')) {
-            const params = new URLSearchParams(hash.substring(1));
-            accessToken = params.get('access_token');
-            localStorage.setItem('discord_access_token', accessToken);
-            window.location.hash = '';
+            // Discord někdy vrací hash ve formátu #token_type=Bearer&access_token=...
+            let accessTokenMatch = hash.match(/access_token=([^&]+)/);
+            if (accessTokenMatch && accessTokenMatch[1]) {
+                accessToken = accessTokenMatch[1];
+                localStorage.setItem('discord_access_token', accessToken);
+                window.location.hash = '';
+            }
         } else {
             accessToken = localStorage.getItem('discord_access_token');
         }
