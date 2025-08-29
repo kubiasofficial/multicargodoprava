@@ -1563,6 +1563,7 @@ function showDispatcherPanel(station, serverCode) {
     fetch(`/api/simrail-timetable?serverCode=${serverCode}&edr=true`)
         .then(res => res.json())
         .then(data => {
+            console.log('EDR API data:', data);
             // Filtruj vlaky, které mají v timetable danou stanici
             const departures = [];
             const arrivals = [];
