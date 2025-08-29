@@ -1,3 +1,69 @@
+/* Moderní grid layout pro výběr vlaku */
+.train-grid-select {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  padding: 12px 0;
+}
+
+.train-card-select {
+  background: #23272a;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+  padding: 18px 16px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+.train-card-select:hover {
+  box-shadow: 0 4px 18px rgba(67,181,129,0.18);
+  border-color: #43b581;
+  transform: translateY(-2px) scale(1.03);
+}
+
+.train-card-img-bubble {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #36393f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+}
+.train-card-img-bubble img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #23272a;
+}
+
+.train-card-info {
+  text-align: center;
+}
+.train-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 1.15em;
+  margin-bottom: 4px;
+}
+.train-card-number {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1.15em;
+}
+.train-card-route {
+  color: #b9bbbe;
+  font-size: 0.98em;
+  margin-top: 2px;
+}
 .train-timetable-table {
   width: 100%;
   border-collapse: separate;
