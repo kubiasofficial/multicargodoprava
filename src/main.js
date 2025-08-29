@@ -1075,26 +1075,6 @@ function showStationServerModal() {
         });
 }
 
-// Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
-function getVehicleImage(vehicles) {
-    // Pokud není pole nebo je prázdné, vrať defaultní obrázek
-    if (!Array.isArray(vehicles) || vehicles.length === 0) {
-        return '/Pictures/train_default.png';
-    }
-    const v = vehicles[0];
-    // Přesné mapování na soubory v public\Pictures
-    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
-    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
-    if (v.includes('EN57')) return '/Pictures/en57-009.png';
-    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
-    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
-    if (v.includes('ET22')) return '/Pictures/et22-243.png';
-    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
-    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
-    // Defaultní obrázek
-    return '/Pictures/train_default.png';
-}
-
 // Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
 function getDelayHtml(delay) {
     if (delay > 0) {
