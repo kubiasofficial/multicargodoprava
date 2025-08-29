@@ -1,3 +1,71 @@
+window.showTrainDetailModal = function(e, trainRaw) {
+    const train = typeof trainRaw === 'string' ? JSON.parse(trainRaw) : trainRaw;
+    let oldModal = document.getElementById('train-detail-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'train-detail-modal';
+    modal.className = 'server-modal';
+    // Základní data
+    const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
+    const trainName = train.trainName || train.TrainName || '';
+    const speed = train.speed || train.Speed || '-';
+    const maxSpeed = train.maxSpeed || train.MaxSpeed || '-';
+    const image = train.image || train.ImageURL || train.imageUrl || 'public/Pictures/train_default.jpg';
+    // Najdi aktuální stop v timetable
+    let timetable = Array.isArray(train.timetable) ? train.timetable : [];
+    let currentIdx = timetable.findIndex(stop => stop.isCurrent || stop.isHere);
+    if (currentIdx === -1) currentIdx = timetable.findIndex(stop => stop.hasArrived === false);
+    const currentStop = timetable[currentIdx] || {};
+    const prevStop = timetable[currentIdx-1] || {};
+    const nextStop = timetable[currentIdx+1] || {};
+    // Zpoždění
+    let delay = 0;
+    if (currentStop.arrivalTime) {
+        const planned = new Date(currentStop.arrivalTime);
+        delay = Math.floor((new Date() - planned) / 60000);
+    }
+    // Modal HTML
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:600px;">
+            <span class="server-modal-close">&times;</span>
+            <div style="display:flex;align-items:center;gap:32px;">
+                <div class="train-modal-img-bubble"><img src="${image}" alt="train" style="width:56px;height:56px;object-fit:cover;border-radius:50%;"></div>
+                <div>
+                    <div style="font-size:2em;font-weight:bold;color:#ffe066;text-shadow:0 2px 12px #23272a;">${trainNo}</div>
+                    <div style="font-size:1.15em;color:#43b581;font-weight:bold;">${trainName}</div>
+                </div>
+            </div>
+            <div style="margin-top:18px;display:flex;gap:32px;justify-content:space-between;">
+                <div>
+                    <div><b>Příjezd:</b> ${currentStop.arrivalTime ? currentStop.arrivalTime.substring(11,16) : '-'} ${delay !== 0 ? (delay > 0 ? `<span class='delay-blink'>+${delay} min</span>` : `<span class='delay-ok'>${-delay} min dříve</span>`) : '<span class=delay-ok>Včas</span>'}</div>
+                    <div><b>Odjezd:</b> ${currentStop.departureTime ? currentStop.departureTime.substring(11,16) : '-'}</div>
+                    <div><b>Kolej:</b> ${currentStop.track || currentStop.platform || '-'}</div>
+                </div>
+                <div>
+                    <div><b>Předchozí stanice:</b> ${prevStop.nameForPerson || '-'}</div>
+                    <div><b>Další stanice:</b> ${nextStop.nameForPerson || '-'}</div>
+                </div>
+            </div>
+            <div style="margin-top:18px;display:flex;gap:32px;justify-content:space-between;">
+                <div><b>Rychlost:</b> ${speed} km/h</div>
+                <div><b>Max. rychlost:</b> ${maxSpeed} km/h</div>
+                <div><b>Vzdálenost:</b> ${currentStop.distance || '-'}</div>
+            </div>
+            <div style="margin-top:18px;">
+                <b>Sekvence vozů:</b>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                    ${(Array.isArray(train.vehicles) ? train.vehicles.map(v => `<img src='${v.image || 'public/Pictures/train_default.jpg'}' alt='vůz' style='width:38px;height:28px;border-radius:6px;background:#23272a;'>`).join('') : '')}
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+};
 // Funkce pro zobrazení modalu s výběrem serveru a následně vlaků
 function showServerModal() {
     let oldModal = document.getElementById('server-select-modal');
@@ -1596,106 +1664,116 @@ function showDispatcherPanel(station, serverCode) {
         });
     }
 
-    // Načtení dat pro tabulky odjezdů/příjezdů přes proxy EDR
-    fetch(`/api/simrail-timetable?serverCode=${serverCode}&edr=true`)
-        .then(res => res.json())
-        .then(data => {
-            console.log('EDR API data:', data);
-            // Debug: vypiš první vlak a jeho timetable
-            if (data.length > 0) {
-                console.log('První vlak:', data[0]);
-                if (Array.isArray(data[0].timetable)) {
-                    console.log('Timetable prvního vlaku:', data[0].timetable);
-                }
-            }
-            // Filtruj vlaky, které mají v timetable danou stanici
-            const departures = [];
-            const arrivals = [];
-            data.forEach(train => {
-                if (Array.isArray(train.timetable)) {
-                    train.timetable.forEach((stop, idx) => {
-                        // Porovnávej podle názvu stanice, ne podle id
-                        if (stop.nameForPerson === station.Name) {
-                            // Odjezd: pokud má departureTime
-                            if (stop.departureTime) {
-                                departures.push({
-                                    train: train,
-                                    stop: stop
-                                });
+    // Načtení a auto-refresh dat pro tabulky odjezdů/příjezdů přes proxy EDR
+    let dispatcherData = { departures: [], arrivals: [] };
+    let dispatcherRefreshInterval = null;
+    function fetchDispatcherData() {
+        fetch(`/api/simrail-timetable?serverCode=${serverCode}&edr=true`)
+            .then(res => res.json())
+            .then(data => {
+                const departures = [];
+                const arrivals = [];
+                const now = new Date();
+                data.forEach(train => {
+                    if (Array.isArray(train.timetable)) {
+                        train.timetable.forEach((stop, idx) => {
+                            if (stop.nameForPerson === station.Name) {
+                                // Odjezd: pokud má departureTime a vlak je ještě na stanici
+                                if (stop.departureTime && (!stop.hasLeft || new Date(stop.departureTime) >= now)) {
+                                    // Další stanice za mnou
+                                    const nextStop = train.timetable[idx+1];
+                                    // Stanice předemnou
+                                    const prevStop = train.timetable[idx-1];
+                                    departures.push({
+                                        train,
+                                        stop,
+                                        track: stop.track || stop.platform || '-',
+                                        nextStation: nextStop ? nextStop.nameForPerson : '-',
+                                        prevStation: prevStop ? prevStop.nameForPerson : '-',
+                                    });
+                                }
+                                // Příjezd: pokud má arrivalTime a vlak ještě nepřijel
+                                if (stop.arrivalTime && (!stop.hasArrived || new Date(stop.arrivalTime) >= now)) {
+                                    const nextStop = train.timetable[idx+1];
+                                    const prevStop = train.timetable[idx-1];
+                                    arrivals.push({
+                                        train,
+                                        stop,
+                                        track: stop.track || stop.platform || '-',
+                                        nextStation: nextStop ? nextStop.nameForPerson : '-',
+                                        prevStation: prevStop ? prevStop.nameForPerson : '-',
+                                    });
+                                }
                             }
-                            // Příjezd: pokud má arrivalTime
-                            if (stop.arrivalTime) {
-                                arrivals.push({
-                                    train: train,
-                                    stop: stop
-                                });
-                            }
-                        }
-                    });
-                }
+                        });
+                    }
+                });
+                // Seřadit podle času
+                const sortByTime = (a, b) => {
+                    const ta = new Date(a.stop.departureTime || a.stop.arrivalTime);
+                    const tb = new Date(b.stop.departureTime || b.stop.arrivalTime);
+                    return ta - tb;
+                };
+                dispatcherData.departures = departures.filter(d => {
+                    const t = new Date(d.stop.departureTime || d.stop.arrivalTime);
+                    return t >= now;
+                }).sort(sortByTime);
+                dispatcherData.arrivals = arrivals.filter(a => {
+                    const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
+                    return t >= now;
+                }).sort(sortByTime);
+                renderPaginatedTable('departure');
+                renderPaginatedTable('arrival');
             });
-            // Seřadit podle času
-            const now = new Date();
-            const sortByTime = (a, b) => {
-                const ta = new Date(a.stop.departureTime || a.stop.arrivalTime);
-                const tb = new Date(b.stop.departureTime || b.stop.arrivalTime);
-                return ta - tb;
+    }
+    function renderPaginatedTable(type) {
+        const items = type === 'departure' ? dispatcherData.departures : dispatcherData.arrivals;
+        const page = window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals'];
+        const perPage = 8;
+        const totalPages = Math.max(1, Math.ceil(items.length / perPage));
+        const start = (page - 1) * perPage;
+        const pageItems = items.slice(start, start + perPage);
+        renderDispatcherTable(type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals', pageItems, type);
+        // Render pagination controls
+        const pagId = type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals';
+        let pagContainer = document.getElementById(pagId + '-pagination');
+        if (!pagContainer) {
+            pagContainer = document.createElement('div');
+            pagContainer.id = pagId + '-pagination';
+            pagContainer.style = 'text-align:center;margin:8px 0;';
+            document.getElementById(pagId).parentElement.appendChild(pagContainer);
+        }
+        pagContainer.innerHTML = '';
+        if (totalPages > 1) {
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '◀';
+            prevBtn.className = 'profile-btn';
+            prevBtn.disabled = page === 1;
+            prevBtn.onclick = () => {
+                window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']--;
+                renderPaginatedTable(type);
             };
-            const futureDepartures = departures.filter(d => {
-                const t = new Date(d.stop.departureTime || d.stop.arrivalTime);
-                return t >= now;
-            }).sort(sortByTime);
-            const futureArrivals = arrivals.filter(a => {
-                const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
-                return t >= now;
-            }).sort(sortByTime);
-            // Stránkování
-            function renderPaginatedTable(type) {
-                const items = type === 'departure' ? futureDepartures : futureArrivals;
-                const page = window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals'];
-                const perPage = 8;
-                const totalPages = Math.max(1, Math.ceil(items.length / perPage));
-                const start = (page - 1) * perPage;
-                const pageItems = items.slice(start, start + perPage);
-                renderDispatcherTable(type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals', pageItems, type);
-                // Render pagination controls
-                const pagId = type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals';
-                let pagContainer = document.getElementById(pagId + '-pagination');
-                if (!pagContainer) {
-                    pagContainer = document.createElement('div');
-                    pagContainer.id = pagId + '-pagination';
-                    pagContainer.style = 'text-align:center;margin:8px 0;';
-                    document.getElementById(pagId).parentElement.appendChild(pagContainer);
-                }
-                pagContainer.innerHTML = '';
-                if (totalPages > 1) {
-                    const prevBtn = document.createElement('button');
-                    prevBtn.textContent = '◀';
-                    prevBtn.className = 'profile-btn';
-                    prevBtn.disabled = page === 1;
-                    prevBtn.onclick = () => {
-                        window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']--;
-                        renderPaginatedTable(type);
-                    };
-                    pagContainer.appendChild(prevBtn);
-                    const pageInfo = document.createElement('span');
-                    pageInfo.textContent = ` ${page} / ${totalPages} `;
-                    pageInfo.style = 'color:#fff;font-weight:bold;margin:0 8px;';
-                    pagContainer.appendChild(pageInfo);
-                    const nextBtn = document.createElement('button');
-                    nextBtn.textContent = '▶';
-                    nextBtn.className = 'profile-btn';
-                    nextBtn.disabled = page === totalPages;
-                    nextBtn.onclick = () => {
-                        window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']++;
-                        renderPaginatedTable(type);
-                    };
-                    pagContainer.appendChild(nextBtn);
-                }
-            }
-            renderPaginatedTable('departure');
-            renderPaginatedTable('arrival');
-        });
+            pagContainer.appendChild(prevBtn);
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = ` ${page} / ${totalPages} `;
+            pageInfo.style = 'color:#fff;font-weight:bold;margin:0 8px;';
+            pagContainer.appendChild(pageInfo);
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '▶';
+            nextBtn.className = 'profile-btn';
+            nextBtn.disabled = page === totalPages;
+            nextBtn.onclick = () => {
+                window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']++;
+                renderPaginatedTable(type);
+            };
+            pagContainer.appendChild(nextBtn);
+        }
+    }
+    fetchDispatcherData();
+    dispatcherRefreshInterval = setInterval(fetchDispatcherData, 15000); // auto-refresh každých 15s
+    panel.addEventListener('remove', () => {
+        if (dispatcherRefreshInterval) clearInterval(dispatcherRefreshInterval);
+    });
 }
 
 function renderDispatcherTable(containerId, items, type) {
@@ -1710,11 +1788,14 @@ function renderDispatcherTable(containerId, items, type) {
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;">Vlak</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Odjezd' : 'Příjezd'}</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">${type === 'departure' ? 'Cílová stanice' : 'Z'} </th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Kolej</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Další stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Předchozí stanice</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Typ</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;">Zpoždění</th>`;
     html += `</tr></thead><tbody>`;
     const now = new Date();
-    items.forEach(({train, stop, position}) => {
+    items.forEach(({train, stop, track, nextStation, prevStation}) => {
         const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
         const trainName = train.trainName || train.TrainName || '';
         const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
@@ -1732,17 +1813,20 @@ function renderDispatcherTable(containerId, items, type) {
         const timeStr = type === 'departure' ? stop.departureTime : stop.arrivalTime;
         if (timeStr) {
             const planned = new Date(timeStr);
-            delay = Math.floor((now - planned) / 60000);
+            delay = Math.floor((new Date() - planned) / 60000);
         }
         let highlight = false;
         if (timeStr) {
             const planned = new Date(timeStr);
-            if (Math.abs(now - planned) <= 60000) highlight = true;
+            if (Math.abs(new Date() - planned) <= 60000) highlight = true;
         }
         html += `<tr class="dispatcher-row" style="background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;">`;
         html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;" onclick="window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')})">${trainNo} <span style="color:${typeColor};font-weight:normal;">${trainName}</span></td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? (stop.departureTime ? stop.departureTime.substring(11,16) : '-') : (stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-')}</td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? endStation : startStation}</td>`;
+        html += `<td style="color:#ffe066;font-weight:bold;padding:7px 10px;">${track || '-'}</td>`;
+        html += `<td style="color:#43b581;font-weight:bold;padding:7px 10px;">${nextStation || '-'}</td>`;
+        html += `<td style="color:#43b581;font-weight:bold;padding:7px 10px;">${prevStation || '-'}</td>`;
         html += `<td style="color:${typeColor};font-weight:bold;padding:7px 10px;">${typeLabel}</td>`;
         html += `<td style="color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
         html += `</tr>`;
