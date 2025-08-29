@@ -1437,7 +1437,16 @@ function showStationTakeoverModal(station, serverCode) {
         // Odeslat zprávu na Discord webhook
         let username = window.currentUser?.username;
         if (!username && window.localStorage) {
-            username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+            const userStr = localStorage.getItem('discord_user');
+            if (userStr) {
+                try {
+                    const userObj = JSON.parse(userStr);
+                    username = userObj.username;
+                } catch (e) {}
+            }
+            if (!username) {
+                username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+            }
         }
         fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
             method: 'POST',
@@ -1532,7 +1541,16 @@ function showDispatcherPanel(station, serverCode) {
         // Odeslat zprávu na Discord webhook
         let username = window.currentUser?.username;
         if (!username && window.localStorage) {
-            username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+            const userStr = localStorage.getItem('discord_user');
+            if (userStr) {
+                try {
+                    const userObj = JSON.parse(userStr);
+                    username = userObj.username;
+                } catch (e) {}
+            }
+            if (!username) {
+                username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+            }
         }
         fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
             method: 'POST',
