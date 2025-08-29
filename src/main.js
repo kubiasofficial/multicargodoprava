@@ -383,7 +383,9 @@ window.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('discord_access_token', accessToken);
                 window.location.hash = '';
             }
-        } else {
+        }
+        // Fallback: pokud není accessToken, zkus z localStorage
+        if (!accessToken) {
             accessToken = localStorage.getItem('discord_access_token');
         }
 
