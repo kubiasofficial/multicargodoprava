@@ -1342,6 +1342,7 @@ function showStationListModal(serverCode) {
         <div class="server-modal-content" style="max-width:700px;">
             <span class="server-modal-close">&times;</span>
             <h2 style="text-align:center;margin-bottom:24px;">Výběr stanice</h2>
+            <input id="station-search" type="text" placeholder="Hledat stanici..." style="width:100%;margin-bottom:18px;padding:10px 16px;font-size:1.1em;border-radius:8px;border:1px solid #43b581;background:#23272a;color:#fff;">
             <div id="stations-list" class="servers-list">
                 <div class="servers-loading">Načítám stanice...</div>
             </div>
@@ -1359,40 +1360,57 @@ function showStationListModal(serverCode) {
         .then(data => {
             const stations = Array.isArray(data.data) ? data.data : [];
             const list = document.getElementById('stations-list');
-            if (stations.length === 0) {
-                list.innerHTML = '<div class="servers-loading">Žádné stanice nejsou dostupné.</div>';
-                return;
+            const searchInput = document.getElementById('station-search');
+            function renderStations(filter = '') {
+                let filtered = stations;
+                if (filter.trim()) {
+                    const f = filter.trim().toLowerCase();
+                    filtered = stations.filter(station =>
+                        station.Name.toLowerCase().includes(f) ||
+                        (station.Prefix && station.Prefix.toLowerCase().includes(f))
+                    );
+                }
+                if (filtered.length === 0) {
+                    list.innerHTML = '<div class="servers-loading">Žádné stanice neodpovídají hledání.</div>';
+                    return;
+                }
+                list.innerHTML = '';
+                filtered.forEach(station => {
+                    const isOccupied = Array.isArray(station.DispatchedBy) && station.DispatchedBy.length > 0;
+                    const div = document.createElement('div');
+                    div.className = 'server-card';
+                    div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
+                    div.style.background = `${isOccupied ? 'linear-gradient(90deg, #23272a 80%, #f0474722 100%)' : 'linear-gradient(90deg, #23272a 80%, #43b58122 100%)'}, url('${station.MainImageURL}') center center/cover no-repeat`;
+                    div.style.position = 'relative';
+                    div.innerHTML = `
+                        <div style='position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(24,26,32,0.68);border-radius:14px;z-index:1;'></div>
+                        <div class="server-header" style="background:rgba(44,47,51,0.85);border-radius:12px 12px 0 0;padding:8px 12px;position:relative;z-index:2;">
+                            <span>${station.Name}</span>
+                            <span class="server-region">${station.Prefix}</span>
+                        </div>
+                        <div class="server-info" style="background:rgba(44,47,51,0.85);border-radius:0 0 12px 12px;padding:8px 12px;position:relative;z-index:2;">
+                            <span class="server-status" style="color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
+                                ${isOccupied ? 'Obsazeno' : 'Volná'}
+                            </span>
+                            <span style="margin-left:16px;color:#aaa;">Obtížnost: ${station.DifficultyLevel}</span>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        if (isOccupied) {
+                            alert('Stanice je již obsazena!');
+                            return;
+                        }
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        // Zde můžeš pokračovat s výběrem nebo akcí pro stanici
+                        alert(`Vybral jsi stanici: ${station.Name}`);
+                    };
+                    list.appendChild(div);
+                });
             }
-            list.innerHTML = '';
-            stations.forEach(station => {
-                const isOccupied = Array.isArray(station.DispatchedBy) && station.DispatchedBy.length > 0;
-                const div = document.createElement('div');
-                div.className = 'server-card';
-                div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
-                div.style.background = `${isOccupied ? 'linear-gradient(90deg, #23272a 80%, #f0474722 100%)' : 'linear-gradient(90deg, #23272a 80%, #43b58122 100%)'}, url('${station.MainImageURL}') center center/cover no-repeat`;
-                div.innerHTML = `
-                    <div class="server-header" style="background:rgba(44,47,51,0.85);border-radius:12px 12px 0 0;padding:8px 12px;">
-                        <span>${station.Name}</span>
-                        <span class="server-region">${station.Prefix}</span>
-                    </div>
-                    <div class="server-info" style="background:rgba(44,47,51,0.85);border-radius:0 0 12px 12px;padding:8px 12px;">
-                        <span class="server-status" style="color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
-                            ${isOccupied ? 'Obsazeno' : 'Volná'}
-                        </span>
-                        <span style="margin-left:16px;color:#aaa;">Obtížnost: ${station.DifficultyLevel}</span>
-                    </div>
-                `;
-                div.onclick = () => {
-                    if (isOccupied) {
-                        alert('Stanice je již obsazena!');
-                        return;
-                    }
-                    modal.classList.remove('active');
-                    setTimeout(() => modal.remove(), 300);
-                    // Zde můžeš pokračovat s výběrem nebo akcí pro stanici
-                    alert(`Vybral jsi stanici: ${station.Name}`);
-                };
-                list.appendChild(div);
+            renderStations();
+            searchInput.addEventListener('input', e => {
+                renderStations(e.target.value);
             });
         })
         .catch(() => {
