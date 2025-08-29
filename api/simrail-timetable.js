@@ -1,6 +1,11 @@
 export default async function handler(req, res) {
-    const { serverCode, train } = req.query;
-    const url = `https://api1.aws.simrail.eu:8082/api/getAllTimetables?serverCode=${serverCode}${train ? `&train=${train}` : ''}`;
+    const { serverCode, train, edr } = req.query;
+    let url;
+    if (edr === 'true') {
+        url = `https://api1.aws.simrail.eu:8082/api/getEDRTimetables?serverCode=${serverCode}${train ? `&train=${train}` : ''}`;
+    } else {
+        url = `https://api1.aws.simrail.eu:8082/api/getAllTimetables?serverCode=${serverCode}${train ? `&train=${train}` : ''}`;
+    }
     try {
         const response = await fetch(url);
         const data = await response.json();

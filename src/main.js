@@ -1535,8 +1535,8 @@ function showDispatcherPanel(station, serverCode) {
         });
     }
 
-    // Načtení dat pro tabulky odjezdů/příjezdů
-    fetch(`https://api1.aws.simrail.eu:8082/api/getEDRTimetables?serverCode=${serverCode}`)
+    // Načtení dat pro tabulky odjezdů/příjezdů přes proxy
+    fetch(`/api/simrail-timetable?serverCode=${serverCode}`)
         .then(res => res.json())
         .then(data => {
             // Filtruj vlaky, které mají v timetable danou stanici
