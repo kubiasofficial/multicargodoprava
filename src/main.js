@@ -1435,7 +1435,10 @@ function showStationTakeoverModal(station, serverCode) {
         modal.classList.remove('active');
         setTimeout(() => modal.remove(), 300);
         // Odeslat zprávu na Discord webhook
-        const username = window.currentUser?.username || 'Neznámý uživatel';
+        let username = window.currentUser?.username;
+        if (!username && window.localStorage) {
+            username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+        }
         fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1527,7 +1530,10 @@ function showDispatcherPanel(station, serverCode) {
             clearInterval(timeInterval);
         }, 350);
         // Odeslat zprávu na Discord webhook
-        const username = window.currentUser?.username || 'Neznámý uživatel';
+        let username = window.currentUser?.username;
+        if (!username && window.localStorage) {
+            username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+        }
         fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1535,8 +1541,8 @@ function showDispatcherPanel(station, serverCode) {
         });
     }
 
-    // Načtení dat pro tabulky odjezdů/příjezdů přes proxy
-    fetch(`/api/simrail-timetable?serverCode=${serverCode}`)
+    // Načtení dat pro tabulky odjezdů/příjezdů přes proxy EDR
+    fetch(`/api/simrail-timetable?serverCode=${serverCode}&edr=true`)
         .then(res => res.json())
         .then(data => {
             // Filtruj vlaky, které mají v timetable danou stanici
