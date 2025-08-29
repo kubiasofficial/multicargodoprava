@@ -233,11 +233,68 @@ function setPage(page) {
                 pageContent.innerHTML = '<h2 style="color:#fff;text-align:center;">Stránka Řidič je ve vývoji.</h2>';
                 background.style.background = "url('/Pictures/bus.png') center center/cover no-repeat";
                 break;
-            case 'prehled':
-                pageTitle.textContent = 'Přehled';
-                background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                initializeEmployeesTable(); // Teď se volá pouze pro nastavení HTML a listeneru
-                break;
+                        case 'prehled':
+                                pageTitle.textContent = 'Přehled';
+                                background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
+                                pageContent.innerHTML = `
+                                    <div class="tables-vertical-container">
+                                        <div class="employee-table-container">
+                                            <h2>Zaměstnanci ve službě</h2>
+                                            <table class="employee-table" id="employee-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Uživatel</th>
+                                                        <th>Role</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                        <div class="activity-table-container">
+                                            <h2>Aktivní jízdy</h2>
+                                            <table class="activity-table" id="activity-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Uživatel</th>
+                                                        <th>Vlak</th>
+                                                        <th>Čas</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                `;
+                                // Zaměstnanci ve službě
+                                db.ref('users').orderByChild('working').equalTo(true).once('value').then(snap => {
+                                    const tbody = document.querySelector('#employee-table tbody');
+                                    tbody.innerHTML = '';
+                                    snap.forEach(child => {
+                                        const val = child.val();
+                                        const tr = document.createElement('tr');
+                                        tr.innerHTML = `
+                                            <td>${val.username || child.key}</td>
+                                            <td>${val.role || '-'}</td>
+                                        `;
+                                        tbody.appendChild(tr);
+                                    });
+                                });
+                                // Aktivní jízdy
+                                db.ref('activity').once('value').then(snap => {
+                                    const tbody = document.querySelector('#activity-table tbody');
+                                    tbody.innerHTML = '';
+                                    snap.forEach(child => {
+                                        const val = child.val();
+                                        const tr = document.createElement('tr');
+                                        tr.innerHTML = `
+                                            <td>${val.username || child.key}</td>
+                                            <td>${val.trainNo || '-'}</td>
+                                            <td>${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
+                                        `;
+                                        tbody.appendChild(tr);
+                                    });
+                                });
+                                break;
             default:
                 pageTitle.textContent = 'Přehled';
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
