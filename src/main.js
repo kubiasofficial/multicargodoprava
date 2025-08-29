@@ -305,14 +305,19 @@ function setPage(page) {
                                                                                                             } else {
                                                                                                                 avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
                                                                                                             }
-                                                                                                            // Získání počáteční a koncové stanice vlaku
+                                                                                                            // Získání počáteční a koncové stanice vlaku z Timetable endpointu
                                                                                                             let startStation = '-';
                                                                                                             let endStation = '-';
                                                                                                             if (val.trainNo && window.trainTimetables && window.trainTimetables[val.trainNo]) {
-                                                                                                                const timetable = window.trainTimetables[val.trainNo];
-                                                                                                                if (Array.isArray(timetable) && timetable.length > 0) {
-                                                                                                                    if (timetable[0] && timetable[0].nameForPerson) startStation = timetable[0].nameForPerson;
-                                                                                                                    if (timetable[timetable.length-1] && timetable[timetable.length-1].nameForPerson) endStation = timetable[timetable.length-1].nameForPerson;
+                                                                                                                const timetableData = window.trainTimetables[val.trainNo];
+                                                                                                                // Pokud je timetableData objekt s startStation/endStation
+                                                                                                                if (timetableData.startStation && timetableData.endStation) {
+                                                                                                                    startStation = timetableData.startStation;
+                                                                                                                    endStation = timetableData.endStation;
+                                                                                                                } else if (Array.isArray(timetableData) && timetableData.length > 0) {
+                                                                                                                    // fallback na původní logiku pokud je to pole
+                                                                                                                    if (timetableData[0] && timetableData[0].nameForPerson) startStation = timetableData[0].nameForPerson;
+                                                                                                                    if (timetableData[timetableData.length-1] && timetableData[timetableData.length-1].nameForPerson) endStation = timetableData[timetableData.length-1].nameForPerson;
                                                                                                                 }
                                                                                                             }
                                                                                                             const tr = document.createElement('tr');
