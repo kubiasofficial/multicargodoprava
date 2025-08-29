@@ -1,4 +1,75 @@
 /* Moderní grid layout pro výběr vlaku */
+.employee-table-container, .activity-table-container {
+  background: rgba(44,47,51,0.92);
+  border-radius: 22px;
+  box-shadow: 0 4px 24px #23272a55;
+  padding: 32px 28px;
+  max-width: 540px;
+  width: 100%;
+  margin: 0 auto 32px auto;
+}
+.employee-table, .activity-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 1.08em;
+  background: none;
+}
+.employee-table th, .activity-table th {
+  background: #23272a;
+  color: #ffe066;
+  font-weight: bold;
+  font-size: 1.13em;
+  padding: 12px 0;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 2px solid #36393f;
+}
+.employee-table td, .activity-table td {
+  color: #fff;
+  padding: 12px 0;
+  border-bottom: 1px solid #36393f;
+  vertical-align: middle;
+}
+.employee-table tr, .activity-table tr {
+  transition: background 0.18s;
+}
+.employee-table tr:hover, .activity-table tr:hover {
+  background: #23272a55;
+}
+.employee-table-container h2, .activity-table-container h2 {
+  font-size: 2em;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 18px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.user-avatar {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #36393f;
+  margin-right: 10px;
+  vertical-align: middle;
+  object-fit: cover;
+}
+.delay-ok {
+  background: #43b581;
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-left: 8px;
+}
+.delay-blink {
+  background: #f04747;
+  color: #fff;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-left: 8px;
+}
 .train-grid-select {
   display: flex;
   flex-direction: column;

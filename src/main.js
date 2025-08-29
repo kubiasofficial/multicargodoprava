@@ -236,72 +236,84 @@ function setPage(page) {
                         case 'prehled':
                                 pageTitle.textContent = 'Přehled';
                                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                                pageContent.innerHTML = `
-                                    <div class="tables-vertical-container">
-                                        <div class="employee-table-container">
-                                            <h2>Zaměstnanci ve službě</h2>
-                                            <table class="employee-table" id="employee-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Uživatel</th>
-                                                        <th>Role</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody></tbody>
-                                            </table>
-                                        </div>
-                                        <div class="activity-table-container">
-                                            <h2>Aktivní jízdy</h2>
-                                            <table class="activity-table" id="activity-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Uživatel</th>
-                                                        <th>Vlak</th>
-                                                        <th>Čas</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                `;
+                                                                pageContent.innerHTML = `
+                                                                    <div class="tables-vertical-container">
+                                                                        <div class="employee-table-container">
+                                                                            <h2>Zaměstnanci ve službě</h2>
+                                                                            <table class="employee-table" id="employee-table">
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th style="text-align:left;">Uživatel</th>
+                                                                                        <th style="text-align:left;">Role</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody></tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                        <div class="activity-table-container">
+                                                                            <h2>Aktivní jízdy</h2>
+                                                                            <table class="activity-table" id="activity-table">
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th style="text-align:left;">Uživatel</th>
+                                                                                        <th style="text-align:left;">Vlak</th>
+                                                                                        <th style="text-align:left;">Čas</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody></tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </div>
+                                                                `;
                                                 // Živá aktualizace zaměstnanců ve službě
                                                 if (window.employeesListener) window.employeesListener.off();
                                                 window.employeesListener = db.ref('users').orderByChild('working').equalTo(true);
-                                                window.employeesListener.on('value', snap => {
-                                                    const tbody = document.querySelector('#employee-table tbody');
-                                                    if (tbody) {
-                                                        tbody.innerHTML = '';
-                                                        snap.forEach(child => {
-                                                            const val = child.val();
-                                                            const tr = document.createElement('tr');
-                                                            tr.innerHTML = `
-                                                                <td>${val.username || child.key}</td>
-                                                                <td>${val.role || '-'}</td>
-                                                            `;
-                                                            tbody.appendChild(tr);
-                                                        });
-                                                    }
-                                                });
-                                                // Živá aktualizace aktivních jízd
-                                                if (window.activityListener) window.activityListener.off();
-                                                window.activityListener = db.ref('activity');
-                                                window.activityListener.on('value', snap => {
-                                                    const tbody = document.querySelector('#activity-table tbody');
-                                                    if (tbody) {
-                                                        tbody.innerHTML = '';
-                                                        snap.forEach(child => {
-                                                            const val = child.val();
-                                                            const tr = document.createElement('tr');
-                                                            tr.innerHTML = `
-                                                                <td>${val.username || child.key}</td>
-                                                                <td>${val.trainNo || '-'}</td>
-                                                                <td>${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
-                                                            `;
-                                                            tbody.appendChild(tr);
-                                                        });
-                                                    }
-                                                });
+                                                                                                window.employeesListener.on('value', snap => {
+                                                                                                    const tbody = document.querySelector('#employee-table tbody');
+                                                                                                    if (tbody) {
+                                                                                                        tbody.innerHTML = '';
+                                                                                                        snap.forEach(child => {
+                                                                                                            const val = child.val();
+                                                                                                            let avatarHtml = '';
+                                                                                                            if (val.avatar && val.id) {
+                                                                                                                avatarHtml = `<img class="user-avatar" src="https://cdn.discordapp.com/avatars/${val.id}/${val.avatar}.png" alt="pfp">`;
+                                                                                                            } else {
+                                                                                                                avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
+                                                                                                            }
+                                                                                                            const tr = document.createElement('tr');
+                                                                                                            tr.innerHTML = `
+                                                                                                                <td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td>
+                                                                                                                <td style="text-align:left;">${val.role || '-'}</td>
+                                                                                                            `;
+                                                                                                            tbody.appendChild(tr);
+                                                                                                        });
+                                                                                                    }
+                                                                                                });
+                                                                                                // Živá aktualizace aktivních jízd
+                                                                                                if (window.activityListener) window.activityListener.off();
+                                                                                                window.activityListener = db.ref('activity');
+                                                                                                window.activityListener.on('value', snap => {
+                                                                                                    const tbody = document.querySelector('#activity-table tbody');
+                                                                                                    if (tbody) {
+                                                                                                        tbody.innerHTML = '';
+                                                                                                        snap.forEach(child => {
+                                                                                                            const val = child.val();
+                                                                                                            let avatarHtml = '';
+                                                                                                            if (val.avatar && val.id) {
+                                                                                                                avatarHtml = `<img class="user-avatar" src="https://cdn.discordapp.com/avatars/${val.id}/${val.avatar}.png" alt="pfp">`;
+                                                                                                            } else {
+                                                                                                                avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
+                                                                                                            }
+                                                                                                            const tr = document.createElement('tr');
+                                                                                                            tr.innerHTML = `
+                                                                                                                <td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td>
+                                                                                                                <td style="text-align:left;">${val.trainNo || '-'}</td>
+                                                                                                                <td style="text-align:left;">${val.time ? new Date(val.time).toLocaleTimeString('cs-CZ') : '-'}</td>
+                                                                                                            `;
+                                                                                                            tbody.appendChild(tr);
+                                                                                                        });
+                                                                                                    }
+                                                                                                });
                                 break;
             default:
                 pageTitle.textContent = 'Přehled';
