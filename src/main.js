@@ -10,7 +10,14 @@ window.showTrainDetailModal = function(e, trainRaw) {
     const trainName = train.trainName || train.TrainName || '';
     const speed = train.speed || train.Speed || '-';
     const maxSpeed = train.maxSpeed || train.MaxSpeed || '-';
-    const image = train.image || train.ImageURL || train.imageUrl || 'public/Pictures/train_default.jpg';
+    // Oprava cesty k obrázku: použij getVehicleImage pokud je Vehicles, jinak fallback
+    let image = '/Pictures/train_default.png';
+    if (Array.isArray(train.vehicles) && train.vehicles.length > 0) {
+        image = getVehicleImage(train.vehicles.map(v => v.name || v.type || v));
+    } else if (train.image || train.ImageURL || train.imageUrl) {
+        image = train.image || train.ImageURL || train.imageUrl;
+        if (!image.startsWith('/Pictures/')) image = '/Pictures/' + image.replace(/^.*[\\\/]/, '');
+    }
     // Najdi aktuální stop v timetable
     let timetable = Array.isArray(train.timetable) ? train.timetable : [];
     let currentIdx = timetable.findIndex(stop => stop.isCurrent || stop.isHere);
@@ -1687,7 +1694,7 @@ function showDispatcherPanel(station, serverCode) {
                                     departures.push({
                                         train,
                                         stop,
-                                        track: stop.track || stop.platform || '-',
+                                        track: stop.track || stop.platform || stop.Track || stop.Platform || '-',
                                         nextStation: nextStop ? nextStop.nameForPerson : '-',
                                         prevStation: prevStop ? prevStop.nameForPerson : '-',
                                     });
@@ -1824,7 +1831,7 @@ function renderDispatcherTable(containerId, items, type) {
         html += `<td style="color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;" onclick="window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')})">${trainNo} <span style="color:${typeColor};font-weight:normal;">${trainName}</span></td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? (stop.departureTime ? stop.departureTime.substring(11,16) : '-') : (stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-')}</td>`;
         html += `<td style="color:#fff;padding:7px 10px;">${type === 'departure' ? endStation : startStation}</td>`;
-        html += `<td style="color:#ffe066;font-weight:bold;padding:7px 10px;">${track || '-'}</td>`;
+    html += `<td style="color:#ffe066;font-weight:bold;padding:7px 10px;">${track && track !== '-' ? track : '-'}</td>`;
         html += `<td style="color:#43b581;font-weight:bold;padding:7px 10px;">${nextStation || '-'}</td>`;
         html += `<td style="color:#43b581;font-weight:bold;padding:7px 10px;">${prevStation || '-'}</td>`;
         html += `<td style="color:${typeColor};font-weight:bold;padding:7px 10px;">${typeLabel}</td>`;
