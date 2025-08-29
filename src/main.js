@@ -1207,29 +1207,7 @@ document.addEventListener('click', function (e) {
 });
 
 // Základní funkce pro zobrazení modalu s výběrem serveru
-function showServerModal() {
-    let oldModal = document.getElementById('server-select-modal');
-    if (oldModal) oldModal.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'server-select-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:500px;">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru</h2>
-            <div style="text-align:center;">Zde bude výběr serveru nebo vlaků.</div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-}
+// ...existing code...
 // Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
 function getVehicleImage(vehicles) {
     // Pokud není pole nebo je prázdné, vrať defaultní obrázek
