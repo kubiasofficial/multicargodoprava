@@ -376,32 +376,43 @@ window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash;
         let accessToken = null;
         if (hash && hash.includes('access_token')) {
-                const params = new URLSearchParams(hash.substring(1));
-                accessToken = params.get('access_token');
-                localStorage.setItem('discord_access_token', accessToken);
-                window.location.hash = '';
+            const params = new URLSearchParams(hash.substring(1));
+            accessToken = params.get('access_token');
+            localStorage.setItem('discord_access_token', accessToken);
+            window.location.hash = '';
         } else {
-                accessToken = localStorage.getItem('discord_access_token');
+            accessToken = localStorage.getItem('discord_access_token');
+        }
+
+        function showDiscordModal() {
+            if (modal) modal.style.display = 'flex';
+        }
+        function hideDiscordModal() {
+            if (modal) modal.style.display = 'none';
         }
 
         if (accessToken) {
-                fetch('https://discord.com/api/users/@me', {
-                        headers: {
-                                'Authorization': 'Bearer ' + accessToken
-                        }
-                })
-                        .then(res => res.json())
-                        .then(user => {
-                                if (modal) modal.style.display = 'none';
-                                showDiscordProfile(user);
-                                window.discordUser = user;
-                                localStorage.setItem('discord_user', JSON.stringify(user));
-                        })
-                        .catch(() => {
-                                if (modal) modal.style.display = 'flex';
-                        });
+            fetch('https://discord.com/api/users/@me', {
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Unauthorized');
+                return res.json();
+            })
+            .then(user => {
+                hideDiscordModal();
+                showDiscordProfile(user);
+                window.discordUser = user;
+                localStorage.setItem('discord_user', JSON.stringify(user));
+            })
+            .catch(() => {
+                showDiscordModal();
+                localStorage.removeItem('discord_access_token');
+            });
         } else {
-                if (modal) modal.style.display = 'flex';
+            showDiscordModal();
         }
 
         // Pokud jsme na stránce Přehled, zobraz tabulky hned po načtení
