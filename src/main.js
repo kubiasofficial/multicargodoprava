@@ -1322,14 +1322,83 @@ function showStationServerModal() {
                     div.onclick = () => {
                         modal.classList.remove('active');
                         setTimeout(() => modal.remove(), 300);
-                        // Zde můžeš otevřít další modal pro výběr stanice nebo jinou akci
-                        alert(`Vybral jsi server: ${server.ServerName}`);
+                        // Po výběru serveru zobrazit modal se stanicemi
+                        showStationListModal(server.ServerCode);
                     };
                 } else {
                     div.style.opacity = '0.6';
                     div.style.cursor = 'not-allowed';
                 }
                 list.appendChild(div);
+// Modal pro výběr stanice na serveru
+function showStationListModal(serverCode) {
+    let oldModal = document.getElementById('station-list-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'station-list-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:700px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr stanice</h2>
+            <div id="stations-list" class="servers-list">
+                <div class="servers-loading">Načítám stanice...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    fetch(`https://panel.simrail.eu:8084/stations-open?serverCode=${serverCode}`)
+        .then(res => res.json())
+        .then(data => {
+            const stations = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('stations-list');
+            if (stations.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné stanice nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            stations.forEach(station => {
+                const isOccupied = Array.isArray(station.DispatchedBy) && station.DispatchedBy.length > 0;
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
+                div.style.background = isOccupied ? 'linear-gradient(90deg, #23272a 80%, #f0474722 100%)' : 'linear-gradient(90deg, #23272a 80%, #43b58122 100%)';
+                div.innerHTML = `
+                    <div class="server-header">
+                        <span>${station.Name}</span>
+                        <span class="server-region">${station.Prefix}</span>
+                    </div>
+                    <div class="server-info">
+                        <span class="server-status" style="color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
+                            ${isOccupied ? 'Obsazeno' : 'Volná'}
+                        </span>
+                        <span style="margin-left:16px;color:#aaa;">Obtížnost: ${station.DifficultyLevel}</span>
+                    </div>
+                `;
+                div.onclick = () => {
+                    if (isOccupied) {
+                        alert('Stanice je již obsazena!');
+                        return;
+                    }
+                    modal.classList.remove('active');
+                    setTimeout(() => modal.remove(), 300);
+                    // Zde můžeš pokračovat s výběrem nebo akcí pro stanici
+                    alert(`Vybral jsi stanici: ${station.Name}`);
+                };
+                list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('stations-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst stanice.</div>';
+        });
+}
             });
         })
         .catch(() => {
