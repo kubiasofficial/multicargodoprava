@@ -293,10 +293,32 @@ function setPage(page) {
                                                                                                 // Živá aktualizace aktivních jízd
                                                                                                 if (window.activityListener) window.activityListener.off();
                                                                                                 window.activityListener = db.ref('activity');
-                                                                                                window.activityListener.on('value', snap => {
+                                                                                                window.activityListener.on('value', async snap => {
                                                                                                     const tbody = document.querySelector('#activity-table tbody');
                                                                                                     if (tbody) {
                                                                                                         tbody.innerHTML = '';
+                                                                                                        // Inicializace cache jízdních řádů
+                                                                                                        if (!window.trainTimetables) window.trainTimetables = {};
+                                                                                                        const promises = [];
+                                                                                                        snap.forEach(child => {
+                                                                                                            const val = child.val();
+                                                                                                            if (val.trainNo && !window.trainTimetables[val.trainNo]) {
+                                                                                                                // Získání jízdního řádu přes proxy endpoint
+                                                                                                                promises.push(
+                                                                                                                    fetch(`/api/simrail-timetable?serverCode=en1&train=${val.trainNo}`)
+                                                                                                                        .then(res => res.json())
+                                                                                                                        .then(data => {
+                                                                                                                            if (Array.isArray(data) && data.length > 0) {
+                                                                                                                                // Najdi správný vlak podle čísla vlaku
+                                                                                                                                let timetableObj = data.find(obj => obj.trainNoLocal == val.trainNo);
+                                                                                                                                if (!timetableObj && data.length === 1) timetableObj = data[0];
+                                                                                                                                if (timetableObj) window.trainTimetables[val.trainNo] = timetableObj;
+                                                                                                                            }
+                                                                                                                        })
+                                                                                                                );
+                                                                                                            }
+                                                                                                        });
+                                                                                                        await Promise.all(promises);
                                                                                                         snap.forEach(child => {
                                                                                                             const val = child.val();
                                                                                                             let avatarHtml = '';
@@ -305,20 +327,13 @@ function setPage(page) {
                                                                                                             } else {
                                                                                                                 avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
                                                                                                             }
-                                                                                                            // Získání počáteční a koncové stanice vlaku z Timetable endpointu
+                                                                                                            // Získání počáteční a koncové stanice vlaku z načtených dat
                                                                                                             let startStation = '-';
                                                                                                             let endStation = '-';
-                                                                                                            if (val.trainNo && window.trainTimetables && window.trainTimetables[val.trainNo]) {
-                                                                                                                const timetableData = window.trainTimetables[val.trainNo];
-                                                                                                                // Pokud je timetableData objekt s startStation/endStation
-                                                                                                                if (timetableData.startStation && timetableData.endStation) {
-                                                                                                                    startStation = timetableData.startStation;
-                                                                                                                    endStation = timetableData.endStation;
-                                                                                                                } else if (Array.isArray(timetableData) && timetableData.length > 0) {
-                                                                                                                    // fallback na původní logiku pokud je to pole
-                                                                                                                    if (timetableData[0] && timetableData[0].nameForPerson) startStation = timetableData[0].nameForPerson;
-                                                                                                                    if (timetableData[timetableData.length-1] && timetableData[timetableData.length-1].nameForPerson) endStation = timetableData[timetableData.length-1].nameForPerson;
-                                                                                                                }
+                                                                                                            if (val.trainNo && window.trainTimetables[val.trainNo]) {
+                                                                                                                const timetableObj = window.trainTimetables[val.trainNo];
+                                                                                                                if (timetableObj.startStation) startStation = timetableObj.startStation;
+                                                                                                                if (timetableObj.endStation) endStation = timetableObj.endStation;
                                                                                                             }
                                                                                                             const tr = document.createElement('tr');
                                                                                                             tr.innerHTML = `
