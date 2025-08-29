@@ -256,8 +256,9 @@ function setPage(page) {
                                                                                 <thead>
                                                                                     <tr>
                                                                                         <th style="text-align:left;">Uživatel</th>
-                                                                                        <th style="text-align:left;">Vlak</th>
-                                                                                        <th style="text-align:left;">Stanice</th>
+                                                                                        <th style="text-align:left;">Číslo vlaku</th>
+                                                                                        <th style="text-align:left;">Počáteční stanice</th>
+                                                                                        <th style="text-align:left;">Konečná stanice</th>
                                                                                     </tr>
                                                                                 </thead>
                                                                                 <tbody></tbody>
@@ -304,27 +305,22 @@ function setPage(page) {
                                                                                                             } else {
                                                                                                                 avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
                                                                                                             }
-                                                                                                            // Získání aktuální stanice vlaku
-                                                                                                            let currentStation = '-';
+                                                                                                            // Získání počáteční a koncové stanice vlaku
+                                                                                                            let startStation = '-';
+                                                                                                            let endStation = '-';
                                                                                                             if (val.trainNo && window.trainTimetables && window.trainTimetables[val.trainNo]) {
                                                                                                                 const timetable = window.trainTimetables[val.trainNo];
                                                                                                                 if (Array.isArray(timetable) && timetable.length > 0) {
-                                                                                                                    const now = new Date();
-                                                                                                                    let found = timetable.find(stop => {
-                                                                                                                        const timeStr = stop.departureTime || stop.arrivalTime;
-                                                                                                                        if (!timeStr) return false;
-                                                                                                                        const time = new Date(timeStr);
-                                                                                                                        return time > now;
-                                                                                                                    });
-                                                                                                                    if (!found) found = timetable[timetable.length-1];
-                                                                                                                    if (found && found.nameForPerson) currentStation = found.nameForPerson;
+                                                                                                                    if (timetable[0] && timetable[0].nameForPerson) startStation = timetable[0].nameForPerson;
+                                                                                                                    if (timetable[timetable.length-1] && timetable[timetable.length-1].nameForPerson) endStation = timetable[timetable.length-1].nameForPerson;
                                                                                                                 }
                                                                                                             }
                                                                                                             const tr = document.createElement('tr');
                                                                                                             tr.innerHTML = `
                                                                                                                 <td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td>
                                                                                                                 <td style="text-align:left;">${val.trainNo || '-'} </td>
-                                                                                                                <td style="text-align:left;">${currentStation}</td>
+                                                                                                                <td style="text-align:left;">${startStation}</td>
+                                                                                                                <td style="text-align:left;">${endStation}</td>
                                                                                                             `;
                                                                                                             tbody.appendChild(tr);
                                                                                                         });
