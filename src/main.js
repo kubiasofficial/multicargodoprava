@@ -144,7 +144,7 @@ function setPage(page) {
             case 'vypravci':
                 pageTitle.textContent = 'Výpravčí';
                 pageContent.innerHTML = `
-                    <h2 style="color:#fff;text-align:center;">Stránka Výpravčí je ve vývoji. Děkuji za trpělivost.</h2>
+                    <h2 style="color:#fff;text-align:center;">Stránka Výpravčí je stále ve vývoji. Děkuji za trpělivost.</h2>
                     <div style="display:flex;justify-content:center;margin-top:48px;">
                         <button id="stanice-btn" class="stanice-btn">Do stanice</button>
                     </div>
