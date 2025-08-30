@@ -311,8 +311,14 @@ function setPage(page) {
             case 'prehled':
                 pageTitle.textContent = 'Přehled';
                 background.style.background = "url('/Pictures/1182.png') center center/cover no-repeat";
-                // Vytvoř nový layout se 4 tabulkami
+                // Pozdrav podle denní doby
+                let greeting = '';
+                const hour = new Date().getHours();
+                if (hour >= 5 && hour < 11) greeting = 'Dobré ráno!';
+                else if (hour >= 11 && hour < 18) greeting = 'Hezké odpoledne!';
+                else greeting = 'Dobrý večer!';
                 pageContent.innerHTML = `
+                  <div style="text-align:center;margin-bottom:24px;font-size:2.2em;font-weight:bold;color:#ffe066;text-shadow:0 2px 12px #23272a;">${greeting}</div>
                   <div id="overview-tables-container" style="display:flex;flex-direction:row;justify-content:center;align-items:flex-start;gap:48px;margin-top:48px;">
                     <div class="tables-vertical-container" style="flex:1;min-width:340px;">
                       <div class="employee-table-container">
@@ -335,7 +341,7 @@ function setPage(page) {
                         <h2>Řidiči</h2>
                         <table class="employee-table" id="driver-table">
                           <thead><tr><th style="text-align:left;">Řidič</th><th style="text-align:left;">Mapa</th><th style="text-align:left;">Linka</th></tr></thead>
-                          <tbody></tbody>
+                          <tbody><tr><td colspan="3" style="text-align:center;color:#ffe066;font-size:1.15em;">V přípravě</td></tr></tbody>
                         </table>
                       </div>
                       <div class="employee-table-container">
@@ -1504,6 +1510,8 @@ function showStationTakeoverModal(station, serverCode, isOccupied = false) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: `:train2: **${username}** převzal stanici **${station.Name}** (${station.Prefix})` })
         });
+        // Přidání výpravčího do stavu
+        addDispatcher(window.discordUser);
         showDispatcherPanel(station, serverCode);
     };
 }
