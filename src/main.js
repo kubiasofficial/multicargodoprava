@@ -1678,54 +1678,103 @@ function showDispatcherPanel(station, serverCode) {
                     const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
                     return t >= now;
                 }).sort(sortByTime);
-                // Zobraz pouze jednu sloučenou tabulku pro výpravčího
-                const containerId = 'dispatcher-departures';
-                renderDispatcherUnifiedTable(containerId, dispatcherData.departures, dispatcherData.arrivals);
+                // Zobraz dvě samostatné tabulky pro odjezdy a příjezdy
+                renderDispatcherTable('dispatcher-departures', dispatcherData.departures, 'Odjezd');
+                renderDispatcherTable('dispatcher-arrivals', dispatcherData.arrivals, 'Příjezd');
             });
     }
-    function renderPaginatedTable(type) {
-        const items = type === 'departure' ? dispatcherData.departures : dispatcherData.arrivals;
-        const page = window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals'];
-        const perPage = 8;
-        const totalPages = Math.max(1, Math.ceil(items.length / perPage));
-        const start = (page - 1) * perPage;
-        const pageItems = items.slice(start, start + perPage);
-        renderDispatcherTable(type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals', pageItems, type);
-        // Render pagination controls
-        const pagId = type === 'departure' ? 'dispatcher-departures' : 'dispatcher-arrivals';
-        let pagContainer = document.getElementById(pagId + '-pagination');
-        if (!pagContainer) {
-            pagContainer = document.createElement('div');
-            pagContainer.id = pagId + '-pagination';
-            pagContainer.style = 'text-align:center;margin:8px 0;';
-            document.getElementById(pagId).parentElement.appendChild(pagContainer);
-        }
-        pagContainer.innerHTML = '';
-        if (totalPages > 1) {
-            const prevBtn = document.createElement('button');
-            prevBtn.textContent = '◀';
-            prevBtn.className = 'profile-btn';
-            prevBtn.disabled = page === 1;
-            prevBtn.onclick = () => {
-                window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']--;
-                renderPaginatedTable(type);
-            };
-            pagContainer.appendChild(prevBtn);
-            const pageInfo = document.createElement('span');
-            pageInfo.textContent = ` ${page} / ${totalPages} `;
-            pageInfo.style = 'color:#fff;font-weight:bold;margin:0 8px;';
-            pagContainer.appendChild(pageInfo);
-            const nextBtn = document.createElement('button');
-            nextBtn.textContent = '▶';
-            nextBtn.className = 'profile-btn';
-            nextBtn.disabled = page === totalPages;
-            nextBtn.onclick = () => {
-                window.dispatcherPages[type === 'departure' ? 'departures' : 'arrivals']++;
-                renderPaginatedTable(type);
-            };
-            pagContainer.appendChild(nextBtn);
-        }
+    // Funkce pro stránkování lze upravit později, nyní zobrazujeme vše
+// Nová funkce: samostatné tabulky pro odjezdy a příjezdy s ručním potvrzením odjezdu
+function renderDispatcherTable(containerId, items, movementType) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!Array.isArray(items) || items.length === 0) {
+        container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
+        return;
     }
+    let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table\" style=\"min-width:900px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;\">`;
+    html += `<thead><tr>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:110px;">Vlak</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Pohyb</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:70px;">Čas</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:80px;">Kolej</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Další stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Předchozí stanice</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Typ</th>`;
+    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Zpoždění</th>`;
+    if (movementType === 'Odjezd') {
+        html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:120px;">Potvrdit odjezd</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+    items.forEach(({train, stop, track, nextStation, prevStation}) => {
+        const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
+        const trainName = train.trainName || train.TrainName || '';
+        const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
+        const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
+        let typeLabel = 'Osobní';
+        let typeColor = '#43b581';
+        if (trainName.toLowerCase().includes('tlk') || trainName.toLowerCase().includes('eip') || trainName.toLowerCase().includes('rj') || trainName.toLowerCase().includes('ic')) {
+            typeLabel = 'Rychlík';
+            typeColor = '#ffb300';
+        } else if (trainName.toLowerCase().includes('mpe') || trainName.toLowerCase().includes('moe') || trainName.toLowerCase().includes('moj')) {
+            typeLabel = 'Nákladní';
+            typeColor = '#3fa7d6';
+        }
+        let delay = 0;
+        const timeStr = movementType === 'Odjezd' ? stop.departureTime : stop.arrivalTime;
+        if (timeStr) {
+            const planned = new Date(timeStr);
+            delay = Math.floor((new Date() - planned) / 60000);
+        }
+        let highlight = false;
+        if (timeStr) {
+            const planned = new Date(timeStr);
+            if (Math.abs(new Date() - planned) <= 60000) highlight = true;
+        }
+        html += `<tr class=\"dispatcher-row\" style=\"background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;\">`;
+        html += `<td style=\"color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;white-space:normal;word-break:break-word;text-align:left;\" onclick=\"window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')} )\">${trainNo} <span style=\"color:${typeColor};font-weight:normal;\">${trainName}</span></td>`;
+        html += `<td style=\"font-weight:bold;padding:7px 10px;color:${movementType === 'Odjezd' ? '#43b581' : '#ffe066'};white-space:normal;word-break:break-word;text-align:left;\">${movementType === 'Odjezd' ? '⬆️ Odjezd' : '⬇️ Příjezd'}</td>`;
+        html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
+        html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${movementType === 'Odjezd' ? endStation : startStation}</td>`;
+        html += `<td style=\"color:#ffe066;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${track && track !== '-' ? track : '-'}</td>`;
+        html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${nextStation || '-'}</td>`;
+        html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${prevStation || '-'}</td>`;
+        html += `<td style=\"color:${typeColor};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${typeLabel}</td>`;
+        html += `<td style=\"color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
+        if (movementType === 'Odjezd') {
+            html += `<td style=\"text-align:center;\"><button class=\"profile-btn profile-btn-green confirm-departure-btn\" data-trainno=\"${trainNo}\" style=\"font-size:1em;padding:6px 18px;\">Potvrdit odjezd</button></td>`;
+        }
+        html += `</tr>`;
+    });
+    html += `</tbody></table></div>`;
+    container.innerHTML = html;
+    // Event handler pro potvrzení odjezdu
+    if (movementType === 'Odjezd') {
+        container.querySelectorAll('.confirm-departure-btn').forEach(btn => {
+            btn.onclick = function() {
+                const trainNo = btn.getAttribute('data-trainno');
+                btn.disabled = true;
+                btn.textContent = 'Odjezd potvrzen';
+                // Zde můžete přidat logiku pro potvrzení odjezdu (např. zápis do DB, webhook, atd.)
+                sendDiscordWebhookTrain(`✅ Odjezd vlaku ${trainNo} ze stanice byl ručně potvrzen výpravčím.`);
+            };
+        });
+    }
+    // Responsivní styl
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @media (max-width: 900px) {
+            .dispatcher-table th, .dispatcher-table td { font-size: 0.95em; padding: 5px 4px; }
+        }
+        @media (max-width: 600px) {
+            .dispatcher-table th, .dispatcher-table td { font-size: 0.85em; padding: 3px 2px; }
+        }
+        .dispatcher-table thead th { position: sticky; top: 0; background: #23272a; z-index: 2; }
+        .dispatcher-table tr:hover { background: #23272a; }
+    `;
+    document.head.appendChild(style);
+}
     fetchDispatcherData();
     dispatcherRefreshInterval = setInterval(fetchDispatcherData, 15000); // auto-refresh každých 15s
     panel.addEventListener('remove', () => {
