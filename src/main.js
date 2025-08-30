@@ -1692,14 +1692,20 @@ function renderDispatcherTable(containerId, items, movementType) {
         container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
         return;
     }
-    // Seřadit podle času a zobrazit jen 8 nejbližších
+    // Seřadit podle času
     const sortedItems = items.slice().sort((a, b) => {
         const ta = new Date(movementType === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
         const tb = new Date(movementType === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
         return ta - tb;
     });
-    const visibleItems = sortedItems.slice(0, 8);
-    let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table\" style=\"min-width:900px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;\">`;
+    // Stránkování
+    const perPage = 8;
+    if (!container._page) container._page = 1;
+    const totalPages = Math.max(1, Math.ceil(sortedItems.length / perPage));
+    if (container._page > totalPages) container._page = totalPages;
+    const start = (container._page - 1) * perPage;
+    const visibleItems = sortedItems.slice(start, start + perPage);
+    let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table dispatcher-table-modern\" style=\"min-width:900px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;box-shadow:0 4px 32px #23272a99;border-radius:18px;\">`;
     html += `<thead><tr>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:110px;">Vlak</th>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Pohyb</th>`;
@@ -1755,6 +1761,14 @@ function renderDispatcherTable(containerId, items, movementType) {
         html += `</tr>`;
     });
     html += `</tbody></table></div>`;
+    // Pagination controls
+    if (totalPages > 1) {
+        html += `<div class=\"dispatcher-pagination\" style=\"text-align:center;margin:12px 0;\">`;
+        html += `<button class=\"profile-btn\" style=\"margin-right:8px;\" ${container._page === 1 ? 'disabled' : ''}>◀</button>`;
+        html += `<span style=\"color:#ffe066;font-weight:bold;margin:0 8px;\">Stránka ${container._page} / ${totalPages}</span>`;
+        html += `<button class=\"profile-btn\" style=\"margin-left:8px;\" ${container._page === totalPages ? 'disabled' : ''}>▶</button>`;
+        html += `</div>`;
+    }
     container.innerHTML = html;
     // Event handler pro potvrzení odjezdu
     if (movementType === 'Odjezd') {
@@ -1763,12 +1777,27 @@ function renderDispatcherTable(containerId, items, movementType) {
                 const trainNo = btn.getAttribute('data-trainno');
                 btn.disabled = true;
                 btn.textContent = 'Odjezd potvrzen';
-                // Zde můžete přidat logiku pro potvrzení odjezdu (např. zápis do DB, webhook, atd.)
                 sendDiscordWebhookTrain(`✅ Odjezd vlaku ${trainNo} ze stanice byl ručně potvrzen výpravčím.`);
             };
         });
     }
-    // Responsivní styl
+    // Event handler pro stránkování
+    const pagBtns = container.querySelectorAll('.dispatcher-pagination button');
+    if (pagBtns.length === 2) {
+        pagBtns[0].onclick = () => {
+            if (container._page > 1) {
+                container._page--;
+                renderDispatcherTable(containerId, items, movementType);
+            }
+        };
+        pagBtns[1].onclick = () => {
+            if (container._page < totalPages) {
+                container._page++;
+                renderDispatcherTable(containerId, items, movementType);
+            }
+        };
+    }
+    // Moderní styl pro tabulku a stránkování
     const style = document.createElement('style');
     style.innerHTML = `
         @media (max-width: 900px) {
@@ -1777,8 +1806,13 @@ function renderDispatcherTable(containerId, items, movementType) {
         @media (max-width: 600px) {
             .dispatcher-table th, .dispatcher-table td { font-size: 0.85em; padding: 3px 2px; }
         }
+        .dispatcher-table-modern { border-radius: 18px; box-shadow: 0 4px 32px #23272a99; background: rgba(44,47,51,0.98); }
         .dispatcher-table thead th { position: sticky; top: 0; background: #23272a; z-index: 2; }
         .dispatcher-table tr:hover { background: #23272a; }
+        .dispatcher-pagination { margin-top: 8px; }
+        .dispatcher-pagination button { font-size: 1.1em; font-weight: bold; border-radius: 8px; padding: 8px 18px; background: linear-gradient(90deg,#43b581 80%,#ffe066 100%); color: #23272a; border: none; box-shadow: 0 2px 8px #43b581; cursor: pointer; transition: box-shadow 0.2s, background 0.2s; }
+        .dispatcher-pagination button:disabled { background: #23272a; color: #aaa; cursor: not-allowed; box-shadow: none; }
+        .dispatcher-pagination span { font-size: 1.1em; }
     `;
     document.head.appendChild(style);
 }
