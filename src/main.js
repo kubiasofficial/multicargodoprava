@@ -1648,7 +1648,8 @@ function showDispatcherPanel(station, serverCode) {
                     <div id="dispatcher-arrivals" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
                 </div>
             </div>
-            <div style="text-align:right;margin-top:32px;">
+            <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:32px;gap:18px;">
+                <button id="dispatcher-test" class="profile-btn profile-btn-green" style="font-size:1.15em;">Test</button>
                 <button id="dispatcher-end" class="profile-btn profile-btn-red" style="font-size:1.15em;">Ukončit směnu</button>
             </div>
         </div>
@@ -1687,6 +1688,18 @@ function showDispatcherPanel(station, serverCode) {
     // Ukončení směny
     document.getElementById('dispatcher-close').onclick = endShift;
     document.getElementById('dispatcher-end').onclick = endShift;
+    // Testovací tlačítko pro zobrazení moderního panelu
+    document.getElementById('dispatcher-test').onclick = () => {
+        // Spojíme odjezdy a příjezdy do jednoho pole pro testovací panel
+        const trains = [...dispatcherData.departures, ...dispatcherData.arrivals].map(item => ({
+            ...item.train,
+            stop: item.stop,
+            track: item.track,
+            nextStation: item.nextStation,
+            prevStation: item.prevStation
+        }));
+        showModernTrainPanel(trains);
+    };
     function endShift() {
         panel.style.animation = 'modalFadeOut 0.4s';
         setTimeout(() => {
