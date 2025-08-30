@@ -2039,64 +2039,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 });
 
-// Oprava: při převzetí stanice přidat výpravčího do stavu
-function showStationTakeoverModal(station, serverCode, isOccupied = false) {
-    let oldModal = document.getElementById('station-takeover-modal');
-    if (oldModal) oldModal.remove();
-    const modal = document.createElement('div');
-    modal.id = 'station-takeover-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:420px;">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">${isOccupied ? 'Stanice je obsazena' : 'Převzít stanici'}: ${station.Name}</h2>
-            <div style="text-align:center;margin-bottom:18px;color:${isOccupied ? '#f04747' : '#43b581'};font-weight:bold;">
-                ${isOccupied ? 'Stanici aktuálně někdo obsluhuje. Pokud ji převezmete, může dojít k odpojení původního výpravčího.' : 'Stanice je volná.'}
-            </div>
-            <div style="display:flex;gap:18px;justify-content:center;">
-                <button id="station-takeover-btn" class="profile-btn profile-btn-green" style="font-size:1.15em;">Převzít</button>
-                <button id="station-cancel-btn" class="profile-btn profile-btn-red" style="font-size:1.15em;">Zavřít</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-    document.getElementById('station-cancel-btn').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-    document.getElementById('station-takeover-btn').onclick = async () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-        // Odeslat zprávu na Discord webhook
-        let username = window.currentUser?.username;
-        if (!username && window.localStorage) {
-            const userStr = localStorage.getItem('discord_user');
-            if (userStr) {
-                try {
-                    const userObj = JSON.parse(userStr);
-                    username = userObj.username;
-                } catch (e) {}
-            }
-            if (!username) {
-                username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
-            }
-        }
-        fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `:train2: **${username}** převzal stanici **${station.Name}** (${station.Prefix})` })
-        });
-        // Přidání výpravčího do stavu
-        addDispatcher(window.discordUser);
-        showDispatcherPanel(station, serverCode);
-    };
-}
-
 // Oprava: při odchodu ze služby odstranění výpravčího ze stavu
 function endShift() {
     panel.style.animation = 'modalFadeOut 0.4s';
