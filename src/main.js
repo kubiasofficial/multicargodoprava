@@ -1692,6 +1692,13 @@ function renderDispatcherTable(containerId, items, movementType) {
         container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
         return;
     }
+    // Seřadit podle času a zobrazit jen 8 nejbližších
+    const sortedItems = items.slice().sort((a, b) => {
+        const ta = new Date(movementType === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
+        const tb = new Date(movementType === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
+        return ta - tb;
+    });
+    const visibleItems = sortedItems.slice(0, 8);
     let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table\" style=\"min-width:900px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;\">`;
     html += `<thead><tr>`;
     html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:110px;">Vlak</th>`;
@@ -1707,7 +1714,7 @@ function renderDispatcherTable(containerId, items, movementType) {
         html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:120px;">Potvrdit odjezd</th>`;
     }
     html += `</tr></thead><tbody>`;
-    items.forEach(({train, stop, track, nextStation, prevStation}) => {
+    visibleItems.forEach(({train, stop, track, nextStation, prevStation}) => {
         const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
         const trainName = train.trainName || train.TrainName || '';
         const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
