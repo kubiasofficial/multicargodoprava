@@ -383,16 +383,23 @@ function setPage(page) {
                 pageTitle.textContent = 'Výpravčí';
                 pageContent.innerHTML = `
                     <h2 style="color:#fff;text-align:center;">Stránka Výpravčí je stále ve vývoji. Děkuji za trpělivost.</h2>
-                    <div style="display:flex;justify-content:center;margin-top:48px;">
+                    <div style="display:flex;justify-content:center;margin-top:48px;gap:24px;">
                         <button id="stanice-btn" class="stanice-btn">Do stanice</button>
+                        <button id="test-btn" class="profile-btn profile-btn-green">Test</button>
                     </div>
                 `;
                 background.style.background = "url('/Pictures/Koluszki.png') center center/cover no-repeat";
                 setTimeout(() => {
-                    const btn = document.getElementById('stanice-btn');
-                    if (btn) {
-                        btn.onclick = () => {
+                    const staniceBtn = document.getElementById('stanice-btn');
+                    if (staniceBtn) {
+                        staniceBtn.onclick = () => {
                             showStationServerModal();
+                        };
+                    }
+                    const testBtn = document.getElementById('test-btn');
+                    if (testBtn) {
+                        testBtn.onclick = () => {
+                            showTestStationServerModal();
                         };
                     }
                 }, 150);
@@ -1649,7 +1656,6 @@ function showDispatcherPanel(station, serverCode) {
                 </div>
             </div>
             <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:32px;gap:18px;">
-                <button id="dispatcher-test" class="profile-btn profile-btn-green" style="font-size:1.15em;">Test</button>
                 <button id="dispatcher-end" class="profile-btn profile-btn-red" style="font-size:1.15em;">Ukončit směnu</button>
             </div>
         </div>
@@ -1688,18 +1694,176 @@ function showDispatcherPanel(station, serverCode) {
     // Ukončení směny
     document.getElementById('dispatcher-close').onclick = endShift;
     document.getElementById('dispatcher-end').onclick = endShift;
-    // Testovací tlačítko pro zobrazení moderního panelu
-    document.getElementById('dispatcher-test').onclick = () => {
-        // Spojíme odjezdy a příjezdy do jednoho pole pro testovací panel
-        const trains = [...dispatcherData.departures, ...dispatcherData.arrivals].map(item => ({
-            ...item.train,
-            stop: item.stop,
-            track: item.track,
-            nextStation: item.nextStation,
-            prevStation: item.prevStation
-        }));
-        showModernTrainPanel(trains);
+    // ...existing code...
+// Nová workflow pro testovací tlačítko na stránce Výpravčí
+function showTestStationServerModal() {
+    let oldModal = document.getElementById('test-station-server-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'test-station-server-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:500px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru pro test panel</h2>
+            <div id="test-servers-list" class="servers-list">
+                <div class="servers-loading">Načítám servery...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
     };
+    fetch('https://panel.simrail.eu:8084/servers-open')
+        .then(res => res.json())
+        .then(data => {
+            const servers = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('test-servers-list');
+            if (servers.length === 0) {
+                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
+                return;
+            }
+            list.innerHTML = '';
+            servers.forEach(server => {
+                const div = document.createElement('div');
+                div.className = 'server-card';
+                div.innerHTML = `
+                    <div class="server-header">
+                        <span>${server.ServerName}</span>
+                        <span class="server-region">${server.ServerRegion}</span>
+                    </div>
+                    <div class="server-info">
+                        <span class="server-status" style="color:${server.IsActive ? '#43b581' : '#f04747'};font-weight:bold;">
+                            ${server.IsActive ? 'Online' : 'Offline'}
+                        </span>
+                    </div>
+                `;
+                if (server.IsActive) {
+                    div.style.cursor = 'pointer';
+                    div.onclick = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        showTestStationListModal(server.ServerCode);
+                    };
+                } else {
+                    div.style.opacity = '0.6';
+                    div.style.cursor = 'not-allowed';
+                }
+                list.appendChild(div);
+            });
+        })
+        .catch(() => {
+            document.getElementById('test-servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
+        });
+}
+
+function showTestStationListModal(serverCode) {
+    let oldModal = document.getElementById('test-station-list-modal');
+    if (oldModal) oldModal.remove();
+    const modal = document.createElement('div');
+    modal.id = 'test-station-list-modal';
+    modal.className = 'server-modal';
+    modal.innerHTML = `
+        <div class="server-modal-content" style="max-width:700px;">
+            <span class="server-modal-close">&times;</span>
+            <h2 style="text-align:center;margin-bottom:24px;">Výběr stanice pro test panel</h2>
+            <input id="test-station-search" type="text" placeholder="Hledat stanici..." style="width:100%;margin-bottom:18px;padding:10px 16px;font-size:1.1em;border-radius:8px;border:1px solid #43b581;background:#23272a;color:#fff;">
+            <div id="test-stations-list" class="servers-list">
+                <div class="servers-loading">Načítám stanice...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => { modal.classList.add('active'); }, 10);
+    modal.querySelector('.server-modal-close').onclick = () => {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    };
+    fetch(`https://panel.simrail.eu:8084/stations-open?serverCode=${serverCode}`)
+        .then(res => res.json())
+        .then(data => {
+            const stations = Array.isArray(data.data) ? data.data : [];
+            const list = document.getElementById('test-stations-list');
+            const searchInput = document.getElementById('test-station-search');
+            function renderStations(filter = '') {
+                let filtered = stations;
+                if (filter.trim()) {
+                    const f = filter.trim().toLowerCase();
+                    filtered = stations.filter(station =>
+                        station.Name.toLowerCase().includes(f) ||
+                        (station.Prefix && station.Prefix.toLowerCase().includes(f))
+                    );
+                }
+                if (filtered.length === 0) {
+                    list.innerHTML = '<div class="servers-loading">Žádné stanice neodpovídají hledání.</div>';
+                    return;
+                }
+                list.innerHTML = '';
+                filtered.forEach(station => {
+                    const isOccupied = Array.isArray(station.DispatchedBy) && station.DispatchedBy.length > 0;
+                    const div = document.createElement('div');
+                    div.className = 'server-card';
+                    div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
+                    div.style.background = `url('${station.MainImageURL}') center center/cover no-repeat`;
+                    div.style.position = 'relative';
+                    div.innerHTML = `
+                        <div style="position:absolute;top:12px;left:16px;z-index:2;text-align:left;">
+                            <span style="font-size:1.25em;font-weight:bold;color:#fff;text-shadow:0 2px 8px #23272a;">${station.Name}</span>
+                        </div>
+                        <div style="position:absolute;bottom:12px;left:16px;z-index:2;text-align:left;">
+                            <span style="font-size:1.08em;font-weight:bold;color:${isOccupied ? '#f04747' : '#43b581'};text-shadow:0 2px 8px #23272a;">
+                                ${isOccupied ? 'Obsazeno' : 'Volná'}
+                            </span>
+                        </div>
+                        <div style="position:absolute;bottom:12px;right:16px;z-index:2;text-align:right;">
+                            <span style="font-size:1.08em;color:#ffe066;font-weight:bold;text-shadow:0 2px 8px #23272a;">Obtížnost: ${station.DifficultyLevel}</span>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.remove(), 300);
+                        showTestModernTrainPanel(serverCode, station.Name);
+                    };
+                    list.appendChild(div);
+                });
+            }
+            renderStations();
+            searchInput.addEventListener('input', e => {
+                renderStations(e.target.value);
+            });
+        })
+        .catch(() => {
+            document.getElementById('test-stations-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst stanice.</div>';
+        });
+}
+
+function showTestModernTrainPanel(serverCode, stationName) {
+    fetch(`/api/simrail-timetable?serverCode=${serverCode}&edr=true`)
+        .then(res => res.json())
+        .then(data => {
+            // Najdi všechny vlaky, které mají v jízdním řádu danou stanici
+            const trains = [];
+            data.forEach(train => {
+                if (Array.isArray(train.timetable)) {
+                    train.timetable.forEach((stop, idx) => {
+                        if (stop.nameForPerson === stationName) {
+                            trains.push({
+                                ...train,
+                                stop,
+                                track: stop.track || stop.platform || stop.Track || stop.Platform || '-',
+                                nextStation: train.timetable[idx+1] ? train.timetable[idx+1].nameForPerson : '-',
+                                prevStation: train.timetable[idx-1] ? train.timetable[idx-1].nameForPerson : '-',
+                            });
+                        }
+                    });
+                }
+            });
+            showModernTrainPanel(trains);
+        });
+}
     function endShift() {
         panel.style.animation = 'modalFadeOut 0.4s';
         setTimeout(() => {
