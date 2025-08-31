@@ -1629,7 +1629,7 @@ function showDispatcherPanel(station, serverCode) {
     panel.style.alignItems = 'center';
     panel.style.animation = 'modalFadeIn 0.4s';
     panel.innerHTML = `
-        <div style="position:relative;max-width:1100px;width:96vw;background:rgba(44,47,51,0.98);border-radius:24px;box-shadow:0 8px 40px #23272a99;padding:38px 38px 32px 38px;">
+        <div style="position:relative;max-width:1200px;width:98vw;background:rgba(44,47,51,0.98);border-radius:24px;box-shadow:0 8px 40px #23272a99;padding:38px 38px 32px 38px;">
             <span id="dispatcher-minimize" style="position:absolute;top:18px;right:54px;font-size:2.2em;color:#fff;cursor:pointer;z-index:2;transition:color 0.2s;">&#8211;</span>
             <span id="dispatcher-close" style="position:absolute;top:18px;right:18px;font-size:2.2em;color:#fff;cursor:pointer;z-index:2;transition:color 0.2s;">&times;</span>
             <div style="text-align:center;margin-bottom:18px;">
@@ -1639,11 +1639,11 @@ function showDispatcherPanel(station, serverCode) {
                 <span id="dispatcher-time" style="font-size:1.5em;color:#fff;font-weight:bold;letter-spacing:2px;text-shadow:0 2px 8px #23272a;"></span>
             </div>
             <div style="display:flex;gap:38px;justify-content:center;align-items:flex-start;">
-                <div style="flex:1;min-width:320px;">
+                <div style="flex:1;min-width:420px;">
                     <h3 style="color:#43b581;text-align:center;margin-bottom:12px;font-size:1.3em;">Odjezdy</h3>
                     <div id="dispatcher-departures" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
                 </div>
-                <div style="flex:1;min-width:320px;">
+                <div style="flex:1;min-width:420px;">
                     <h3 style="color:#ffe066;text-align:center;margin-bottom:12px;font-size:1.3em;">Příjezdy</h3>
                     <div id="dispatcher-arrivals" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
                 </div>
