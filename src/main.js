@@ -112,54 +112,72 @@ window.showTrainDetailModal = function(e, trainRaw) {
         image = train.image || train.ImageURL || train.imageUrl;
         if (!image.startsWith('/Pictures/')) image = '/Pictures/' + image.replace(/^.*[\\\/]/, '');
     }
-    // Najdi aktuální stop v timetable
-    let timetable = Array.isArray(train.timetable) ? train.timetable : [];
-    let currentIdx = timetable.findIndex(stop => stop.isCurrent || stop.isHere);
-    if (currentIdx === -1) currentIdx = timetable.findIndex(stop => stop.hasArrived === false);
-    const currentStop = timetable[currentIdx] || {};
-    const prevStop = timetable[currentIdx-1] || {};
-    const nextStop = timetable[currentIdx+1] || {};
-    // Zpoždění
-    let delay = 0;
-    if (currentStop.arrivalTime) {
-        const planned = new Date(currentStop.arrivalTime);
-        delay = Math.floor((new Date() - planned) / 60000);
-    }
-    // Modal HTML
-    modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:600px;">
-            <span class="server-modal-close">&times;</span>
-            <div style="display:flex;align-items:center;gap:32px;">
-                <div class="train-modal-img-bubble"><img src="${image}" alt="train" style="width:56px;height:56px;object-fit:cover;border-radius:50%;"></div>
-                <div>
-                    <div style="font-size:2em;font-weight:bold;color:#ffe066;text-shadow:0 2px 12px #23272a;">${trainNo}</div>
-                    <div style="font-size:1.15em;color:#43b581;font-weight:bold;">${trainName}</div>
+        // Najdi aktuální stop v timetable
+        let timetable = Array.isArray(train.timetable) ? train.timetable : [];
+        let currentIdx = timetable.findIndex(stop => stop.isCurrent || stop.isHere);
+        if (currentIdx === -1) currentIdx = timetable.findIndex(stop => stop.hasArrived === false);
+        const currentStop = timetable[currentIdx] || {};
+        const prevStop = timetable[currentIdx-1] || {};
+        const nextStop = timetable[currentIdx+1] || {};
+        // Zpoždění
+        let delay = 0;
+        if (currentStop.arrivalTime) {
+            const planned = new Date(currentStop.arrivalTime);
+            const now = new Date();
+            delay = Math.floor((now - planned) / 60000);
+        }
+        // Vygeneruj jízdní řád s vyznačením aktuální stanice
+        let timetableHtml = `<table class="train-timetable-table" style="width:100%;margin-top:18px;">
+            <thead><tr><th>Stanice</th><th>Příjezd</th><th>Odjezd</th><th>Kolej</th></tr></thead><tbody>`;
+        timetable.forEach((stop, idx) => {
+            const isCurrent = idx === currentIdx;
+            timetableHtml += `<tr${isCurrent ? ' style="background:#ffe066;color:#23272a;font-weight:bold;"' : ''}>
+                <td>${stop.nameForPerson || '-'}</td>
+                <td>${stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-'}</td>
+                <td>${stop.departureTime ? stop.departureTime.substring(11,16) : '-'}</td>
+                <td>${stop.track || stop.platform || '-'}</td>
+            </tr>`;
+        });
+        timetableHtml += `</tbody></table>`;
+        // Modal HTML
+        modal.innerHTML = `
+            <div class="server-modal-content" style="max-width:600px;">
+                <span class="server-modal-close">&times;</span>
+                <div style="display:flex;align-items:center;gap:32px;">
+                    <div class="train-modal-img-bubble"><img src="${image}" alt="train" style="width:56px;height:56px;object-fit:cover;border-radius:50%;"></div>
+                    <div>
+                        <div style="font-size:2em;font-weight:bold;color:#ffe066;text-shadow:0 2px 12px #23272a;">${trainNo}</div>
+                        <div style="font-size:1.15em;color:#43b581;font-weight:bold;">${trainName}</div>
+                    </div>
+                </div>
+                <div style="margin-top:18px;display:flex;gap:32px;justify-content:space-between;">
+                    <div>
+                        <div><b>Příjezd:</b> ${currentStop.arrivalTime ? currentStop.arrivalTime.substring(11,16) : '-'} ${delay !== 0 ? (delay > 0 ? `<span class='delay-blink'>+${delay} min</span>` : `<span class='delay-ok'>${-delay} min dříve</span>`) : '<span class=delay-ok>Včas</span>'}</div>
+                        <div><b>Odjezd:</b> ${currentStop.departureTime ? currentStop.departureTime.substring(11,16) : '-'}</div>
+                        <div><b>Kolej:</b> ${currentStop.track || currentStop.platform || '-'}</div>
+                    </div>
+                    <div>
+                        <div><b>Předchozí stanice:</b> ${prevStop.nameForPerson || '-'}</div>
+                        <div><b>Další stanice:</b> ${nextStop.nameForPerson || '-'}</div>
+                    </div>
+                </div>
+                <div style="margin-top:18px;display:flex;gap:32px;justify-content:space-between;">
+                    <div><b>Rychlost:</b> ${speed} km/h</div>
+                    <div><b>Max. rychlost:</b> ${maxSpeed} km/h</div>
+                    <div><b>Vzdálenost:</b> ${currentStop.distance || '-'}</div>
+                </div>
+                <div style="margin-top:18px;">
+                    <b>Sekvence vozů:</b>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                        ${(Array.isArray(train.vehicles) ? train.vehicles.map(v => `<img src='${v.image || 'public/Pictures/train_default.jpg'}' alt='vůz' style='width:38px;height:28px;border-radius:6px;background:#23272a;'>`).join('') : '')}
+                    </div>
+                </div>
+                <div style="margin-top:24px;">
+                    <b>Jízdní řád:</b>
+                    ${timetableHtml}
                 </div>
             </div>
-            <div style="margin-top:18px;display:flex;gap:32px;justify-content:space-between;">
-                <div>
-                    <div><b>Příjezd:</b> ${currentStop.arrivalTime ? currentStop.arrivalTime.substring(11,16) : '-'} ${delay !== 0 ? (delay > 0 ? `<span class='delay-blink'>+${delay} min</span>` : `<span class='delay-ok'>${-delay} min dříve</span>`) : '<span class=delay-ok>Včas</span>'}</div>
-                    <div><b>Odjezd:</b> ${currentStop.departureTime ? currentStop.departureTime.substring(11,16) : '-'}</div>
-                    <div><b>Kolej:</b> ${currentStop.track || currentStop.platform || '-'}</div>
-                </div>
-                <div>
-                    <div><b>Předchozí stanice:</b> ${prevStop.nameForPerson || '-'}</div>
-                    <div><b>Další stanice:</b> ${nextStop.nameForPerson || '-'}</div>
-                </div>
-            </div>
-            <div style="margin-top:18px;display:flex;gap:32px;justify-content:space-between;">
-                <div><b>Rychlost:</b> ${speed} km/h</div>
-                <div><b>Max. rychlost:</b> ${maxSpeed} km/h</div>
-                <div><b>Vzdálenost:</b> ${currentStop.distance || '-'}</div>
-            </div>
-            <div style="margin-top:18px;">
-                <b>Sekvence vozů:</b>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-                    ${(Array.isArray(train.vehicles) ? train.vehicles.map(v => `<img src='${v.image || 'public/Pictures/train_default.jpg'}' alt='vůz' style='width:38px;height:28px;border-radius:6px;background:#23272a;'>`).join('') : '')}
-                </div>
-            </div>
-        </div>
-    `;
+        `;
     document.body.appendChild(modal);
     setTimeout(() => { modal.classList.add('active'); }, 10);
     modal.querySelector('.server-modal-close').onclick = () => {
