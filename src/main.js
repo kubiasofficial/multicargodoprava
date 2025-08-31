@@ -1629,7 +1629,7 @@ function showDispatcherPanel(station, serverCode) {
     panel.style.alignItems = 'center';
     panel.style.animation = 'modalFadeIn 0.4s';
     panel.innerHTML = `
-        <div style="position:relative;max-width:1200px;width:98vw;background:rgba(44,47,51,0.98);border-radius:24px;box-shadow:0 8px 40px #23272a99;padding:38px 38px 32px 38px;">
+    <div style="position:relative;max-width:1200px;width:98vw;max-height:90vh;overflow-y:auto;background:rgba(44,47,51,0.98);border-radius:24px;box-shadow:0 8px 40px #23272a99;padding:38px 38px 32px 38px;">
             <span id="dispatcher-minimize" style="position:absolute;top:18px;right:54px;font-size:2.2em;color:#fff;cursor:pointer;z-index:2;transition:color 0.2s;">&#8211;</span>
             <span id="dispatcher-close" style="position:absolute;top:18px;right:18px;font-size:2.2em;color:#fff;cursor:pointer;z-index:2;transition:color 0.2s;">&times;</span>
             <div style="text-align:center;margin-bottom:18px;">
