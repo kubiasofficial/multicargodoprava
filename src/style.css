@@ -1,3 +1,17 @@
+@keyframes blinkDotGreen {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.station-dot-blink-green {
+  animation: blinkDotGreen 1s infinite;
+}
+@keyframes blinkDot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.station-dot-blink {
+  animation: blinkDot 1s infinite;
+}
 /* Moderní EDR tabulka - custom třídy */
 .edr-odjezdy {
   color: #43b581 !important;

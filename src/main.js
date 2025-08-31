@@ -129,10 +129,31 @@ window.showTrainDetailModal = function(e, trainRaw) {
         // Vygeneruj jízdní řád s vyznačením aktuální stanice
         let timetableHtml = `<table class="train-timetable-table" style="width:100%;margin-top:18px;">
             <thead><tr><th>Stanice</th><th>Příjezd</th><th>Odjezd</th><th>Kolej</th></tr></thead><tbody>`;
+        const now = new Date();
+        let nextIdx = timetable.findIndex(stop => {
+            const arr = stop.arrivalTime ? new Date(stop.arrivalTime) : null;
+            const dep = stop.departureTime ? new Date(stop.departureTime) : null;
+            return (arr && arr > now) || (dep && dep > now);
+        });
         timetable.forEach((stop, idx) => {
             const isCurrent = idx === currentIdx;
-            timetableHtml += `<tr${isCurrent ? ' style="background:#ffe066;color:#23272a;font-weight:bold;"' : ''}>
-                <td>${stop.nameForPerson || '-'}</td>
+            const isNext = idx === nextIdx;
+            let rowStyle = '';
+            let dot = '';
+            if (isCurrent && stop.arrivalTime && stop.departureTime) {
+                // Aktuální stanice, příjezd i odjezd právě teď
+                rowStyle = 'background:#43b581;color:#fff;font-weight:bold;';
+                dot = '<span class="station-dot-blink-green" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#43b581;animation:blinkDotGreen 1s infinite;margin-right:6px;vertical-align:middle;"></span>';
+            } else if (isCurrent) {
+                // Aktuální stanice, zvýrazni žlutě
+                rowStyle = 'background:#ffe066;color:#23272a;font-weight:bold;';
+                dot = '<span class="station-dot-blink" style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#f04747;animation:blinkDot 1s infinite;margin-right:6px;vertical-align:middle;"></span>';
+            } else if (isNext) {
+                // Nejbližší stanice v budoucnu, zvýrazni žlutě
+                rowStyle = 'background:#ffe066;color:#23272a;font-weight:bold;';
+            }
+            timetableHtml += `<tr${rowStyle ? ` style="${rowStyle}"` : ''}>
+                <td>${dot}${stop.nameForPerson || '-'}</td>
                 <td>${stop.arrivalTime ? stop.arrivalTime.substring(11,16) : '-'}</td>
                 <td>${stop.departureTime ? stop.departureTime.substring(11,16) : '-'}</td>
                 <td>${stop.track || stop.platform || '-'}</td>
