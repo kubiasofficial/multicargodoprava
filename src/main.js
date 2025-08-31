@@ -1638,12 +1638,12 @@ function showDispatcherPanel(station, serverCode) {
             <div style="text-align:center;margin-bottom:18px;">
                 <span id="dispatcher-time" style="font-size:1.5em;color:#fff;font-weight:bold;letter-spacing:2px;text-shadow:0 2px 8px #23272a;"></span>
             </div>
-            <div style="display:flex;gap:38px;justify-content:center;align-items:flex-start;">
-                <div style="flex:1;min-width:420px;">
+            <div style="display:flex;flex-direction:column;gap:38px;justify-content:center;align-items:center;">
+                <div style="width:100%;max-width:1100px;">
                     <h3 style="color:#43b581;text-align:center;margin-bottom:12px;font-size:1.3em;">Odjezdy</h3>
                     <div id="dispatcher-departures" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
                 </div>
-                <div style="flex:1;min-width:420px;">
+                <div style="width:100%;max-width:1100px;">
                     <h3 style="color:#ffe066;text-align:center;margin-bottom:12px;font-size:1.3em;">Příjezdy</h3>
                     <div id="dispatcher-arrivals" class="train-timetable-table" style="border-radius:16px;overflow:hidden;"></div>
                 </div>
