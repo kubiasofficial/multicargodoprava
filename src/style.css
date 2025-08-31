@@ -1,3 +1,56 @@
+/* Moderní EDR tabulka - custom třídy */
+.edr-odjezdy {
+  color: #43b581 !important;
+  background: #23272a !important;
+  font-weight: bold;
+  font-size: 1.13em;
+  padding: 14px 16px;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 2px solid #36393f;
+}
+.edr-prijezdy {
+  color: #ffe066 !important;
+  background: #23272a !important;
+  font-weight: bold;
+  font-size: 1.13em;
+  padding: 14px 16px;
+  border-radius: 12px 12px 0 0;
+  border-bottom: 2px solid #36393f;
+}
+.edr-zebra1 {
+  background: #23272a !important;
+  transition: background 0.2s;
+}
+.edr-zebra2 {
+  background: #23272a99 !important;
+  transition: background 0.2s;
+}
+.edr-vlak {
+  color: #fff;
+  font-weight: bold;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.edr-vlakname {
+  color: #aaa;
+  font-weight: normal;
+}
+.edr-cas, .edr-stanice, .edr-kolej, .edr-dalsistanice, .edr-predchozistanice {
+  padding: 14px 16px;
+  font-size: 1.08em;
+  color: #fff;
+}
+.edr-kolej {
+  color: #ffe066;
+  font-weight: bold;
+}
+.edr-dalsistanice, .edr-predchozistanice {
+  color: #43b581;
+  font-weight: bold;
+}
+.train-timetable-table tr:hover td, .edr-zebra1:hover td, .edr-zebra2:hover td {
+  background: #23272a66 !important;
+}
 .train-timetable-table-container {
   width: 100%;
   max-width: 1200px;
@@ -1194,3 +1247,11 @@ body {
   border-color: #43b581;
   filter: brightness(0.93);
 }
+
+.edr-odjezdy { color: #43b581 !important; }
+.edr-prijezdy { color: #ffe066 !important; }
+.edr-zebra1 { background: #23272a !important; }
+.edr-zebra2 { background: #23272a99 !important; }
+.edr-vlak { color: #fff; font-weight: bold; padding: 14px 16px; cursor: pointer; }
+.edr-vlakname { color: #aaa; font-weight: normal; }
+.edr-cas, .edr-stanice, .edr-kolej, .edr-dalsistanice, .edr-predchozistanice { padding: 14px 16px; }

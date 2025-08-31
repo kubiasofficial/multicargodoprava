@@ -385,7 +385,6 @@ function setPage(page) {
                     <h2 style="color:#fff;text-align:center;">Stránka Výpravčí je stále ve vývoji. Děkuji za trpělivost.</h2>
                     <div style="display:flex;justify-content:center;margin-top:48px;gap:24px;">
                         <button id="stanice-btn" class="stanice-btn">Do stanice</button>
-                        <button id="test-btn" class="profile-btn profile-btn-green">Test</button>
                     </div>
                 `;
                 background.style.background = "url('/Pictures/Koluszki.png') center center/cover no-repeat";
@@ -394,12 +393,6 @@ function setPage(page) {
                     if (staniceBtn) {
                         staniceBtn.onclick = () => {
                             showStationServerModal();
-                        };
-                    }
-                    const testBtn = document.getElementById('test-btn');
-                    if (testBtn) {
-                        testBtn.onclick = () => {
-                            showTestStationServerModal();
                         };
                     }
                 }, 150);
@@ -1694,203 +1687,6 @@ function showDispatcherPanel(station, serverCode) {
     // Ukončení směny
     document.getElementById('dispatcher-close').onclick = endShift;
     document.getElementById('dispatcher-end').onclick = endShift;
-    // ...existing code...
-// Nová workflow pro testovací tlačítko na stránce Výpravčí
-function showTestStationServerModal() {
-    let oldModal = document.getElementById('test-station-server-modal');
-    if (oldModal) oldModal.remove();
-    const modal = document.createElement('div');
-    modal.id = 'test-station-server-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:500px;">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Výběr serveru pro test panel</h2>
-            <div id="test-servers-list" class="servers-list">
-                <div class="servers-loading">Načítám servery...</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-    fetch('https://panel.simrail.eu:8084/servers-open')
-        .then(res => res.json())
-        .then(data => {
-            const servers = Array.isArray(data.data) ? data.data : [];
-            const list = document.getElementById('test-servers-list');
-            if (servers.length === 0) {
-                list.innerHTML = '<div class="servers-loading">Žádné servery nejsou dostupné.</div>';
-                return;
-            }
-            list.innerHTML = '';
-            servers.forEach(server => {
-                const div = document.createElement('div');
-                div.className = 'server-card';
-                div.innerHTML = `
-                    <div class="server-header">
-                        <span>${server.ServerName}</span>
-                        <span class="server-region">${server.ServerRegion}</span>
-                    </div>
-                    <div class="server-info">
-                        <span class="server-status" style="color:${server.IsActive ? '#43b581' : '#f04747'};font-weight:bold;">
-                            ${server.IsActive ? 'Online' : 'Offline'}
-                        </span>
-                    </div>
-                `;
-                if (server.IsActive) {
-                    div.style.cursor = 'pointer';
-                    div.onclick = () => {
-                        modal.classList.remove('active');
-                        setTimeout(() => modal.remove(), 300);
-                        showTestStationListModal(server.ServerCode);
-                    };
-                } else {
-                    div.style.opacity = '0.6';
-                    div.style.cursor = 'not-allowed';
-                }
-                list.appendChild(div);
-            });
-        })
-        .catch(() => {
-            document.getElementById('test-servers-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst servery.</div>';
-        });
-}
-
-function showTestStationListModal(serverCode) {
-    let oldModal = document.getElementById('test-station-list-modal');
-    if (oldModal) oldModal.remove();
-    const modal = document.createElement('div');
-    modal.id = 'test-station-list-modal';
-    modal.className = 'server-modal';
-    modal.innerHTML = `
-        <div class="server-modal-content" style="max-width:700px;">
-            <span class="server-modal-close">&times;</span>
-            <h2 style="text-align:center;margin-bottom:24px;">Výběr stanice pro test panel</h2>
-            <input id="test-station-search" type="text" placeholder="Hledat stanici..." style="width:100%;margin-bottom:18px;padding:10px 16px;font-size:1.1em;border-radius:8px;border:1px solid #43b581;background:#23272a;color:#fff;">
-            <div id="test-stations-list" class="servers-list">
-                <div class="servers-loading">Načítám stanice...</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    setTimeout(() => { modal.classList.add('active'); }, 10);
-    modal.querySelector('.server-modal-close').onclick = () => {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    };
-    fetch(`https://panel.simrail.eu:8084/stations-open?serverCode=${serverCode}`)
-        .then(res => res.json())
-        .then(data => {
-            const stations = Array.isArray(data.data) ? data.data : [];
-            const list = document.getElementById('test-stations-list');
-            const searchInput = document.getElementById('test-station-search');
-            function renderStations(filter = '') {
-                let filtered = stations;
-                if (filter.trim()) {
-                    const f = filter.trim().toLowerCase();
-                    filtered = stations.filter(station =>
-                        station.Name.toLowerCase().includes(f) ||
-                        (station.Prefix && station.Prefix.toLowerCase().includes(f))
-                    );
-                }
-                if (filtered.length === 0) {
-                    list.innerHTML = '<div class="servers-loading">Žádné stanice neodpovídají hledání.</div>';
-                    return;
-                }
-                list.innerHTML = '';
-                filtered.forEach(station => {
-                    const isOccupied = Array.isArray(station.DispatchedBy) && station.DispatchedBy.length > 0;
-                    const div = document.createElement('div');
-                    div.className = 'server-card';
-                    div.style.border = isOccupied ? '2px solid #f04747' : '2px solid #43b581';
-                    div.style.background = `url('${station.MainImageURL}') center center/cover no-repeat`;
-                    div.style.position = 'relative';
-                    div.innerHTML = `
-                        <div style="position:absolute;top:12px;left:16px;z-index:2;text-align:left;">
-                            <span style="font-size:1.25em;font-weight:bold;color:#fff;text-shadow:0 2px 8px #23272a;">${station.Name}</span>
-                        </div>
-                        <div style="position:absolute;bottom:12px;left:16px;z-index:2;text-align:left;">
-                            <span style="font-size:1.08em;font-weight:bold;color:${isOccupied ? '#f04747' : '#43b581'};text-shadow:0 2px 8px #23272a;">
-                                ${isOccupied ? 'Obsazeno' : 'Volná'}
-                            </span>
-                        </div>
-                        <div style="position:absolute;bottom:12px;right:16px;z-index:2;text-align:right;">
-                            <span style="font-size:1.08em;color:#ffe066;font-weight:bold;text-shadow:0 2px 8px #23272a;">Obtížnost: ${station.DifficultyLevel}</span>
-                        </div>
-                    `;
-                    div.onclick = () => {
-                        modal.classList.remove('active');
-                        setTimeout(() => modal.remove(), 300);
-                        showTestModernTrainPanel(serverCode, station.Name);
-                    };
-                    list.appendChild(div);
-                });
-            }
-            renderStations();
-            searchInput.addEventListener('input', e => {
-                renderStations(e.target.value);
-            });
-        })
-        .catch(() => {
-            document.getElementById('test-stations-list').innerHTML = '<div class="servers-loading">Nepodařilo se načíst stanice.</div>';
-        });
-}
-
-function showTestModernTrainPanel(serverCode, stationName) {
-    fetch(`/api/simrail-timetable?serverCode=${serverCode}&edr=true`)
-        .then(res => res.json())
-        .then(data => {
-            // Najdi všechny vlaky, které mají v jízdním řádu danou stanici
-            const trains = [];
-            data.forEach(train => {
-                if (Array.isArray(train.timetable)) {
-                    train.timetable.forEach((stop, idx) => {
-                        if (stop.nameForPerson === stationName) {
-                            trains.push({
-                                ...train,
-                                stop,
-                                track: stop.track || stop.platform || stop.Track || stop.Platform || '-',
-                                nextStation: train.timetable[idx+1] ? train.timetable[idx+1].nameForPerson : '-',
-                                prevStation: train.timetable[idx-1] ? train.timetable[idx-1].nameForPerson : '-',
-                            });
-                        }
-                    });
-                }
-            });
-            showModernTrainPanel(trains);
-        });
-}
-    function endShift() {
-        panel.style.animation = 'modalFadeOut 0.4s';
-        setTimeout(() => {
-            panel.remove();
-            clearInterval(timeInterval);
-        }, 350);
-        // Odeslat zprávu na Discord webhook
-        let username = window.currentUser?.username;
-        if (!username && window.localStorage) {
-            const userStr = localStorage.getItem('discord_user');
-            if (userStr) {
-                try {
-                    const userObj = JSON.parse(userStr);
-                    username = userObj.username;
-                } catch (e) {}
-            }
-            if (!username) {
-                username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
-            }
-        }
-        fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: `:wave: **${username}** opustil stanici **${station.Name}** (${station.Prefix})` })
-        });
-    }
-
     // Načtení a auto-refresh dat pro tabulky odjezdů/příjezdů přes proxy EDR
     let dispatcherData = { departures: [], arrivals: [] };
     let dispatcherRefreshInterval = null;
@@ -1949,486 +1745,217 @@ function showTestModernTrainPanel(serverCode, stationName) {
                     const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
                     return t >= now;
                 }).sort(sortByTime);
-                // Zobraz dvě samostatné tabulky pro odjezdy a příjezdy
+                // Zobraz dvě samostatné tabulky pro odjezd a příjezd
                 renderDispatcherTable('dispatcher-departures', dispatcherData.departures, 'Odjezd');
                 renderDispatcherTable('dispatcher-arrivals', dispatcherData.arrivals, 'Příjezd');
             });
     }
     // Funkce pro stránkování lze upravit později, nyní zobrazujeme vše
-// Nová funkce: samostatné tabulky pro odjezdy a příjezdy s ručním potvrzením odjezdu
-function renderDispatcherTable(containerId, items, movementType) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    if (!Array.isArray(items) || items.length === 0) {
-        container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
-        return;
-    }
-    // Seřadit podle času
-    const sortedItems = items.slice().sort((a, b) => {
-        const ta = new Date(movementType === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
-        const tb = new Date(movementType === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
-        return ta - tb;
-    });
-    // Stránkování
-    const perPage = 8;
-    if (!container._page) container._page = 1;
-    const totalPages = Math.max(1, Math.ceil(sortedItems.length / perPage));
-    if (container._page > totalPages) container._page = totalPages;
-    const start = (container._page - 1) * perPage;
-    const visibleItems = sortedItems.slice(start, start + perPage);
-    let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table dispatcher-table-modern\" style=\"min-width:900px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;box-shadow:0 4px 32px #23272a99;border-radius:18px;\">`;
-    html += `<thead><tr>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:110px;">Vlak</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Pohyb</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:70px;">Čas</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:80px;">Kolej</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Další stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Předchozí stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Typ</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Zpoždění</th>`;
-    if (movementType === 'Odjezd') {
-        html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:120px;">Potvrdit odjezd</th>`;
-    }
-    html += `</tr></thead><tbody>`;
-    visibleItems.forEach(({train, stop, track, nextStation, prevStation}) => {
-        const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
-        const trainName = train.trainName || train.TrainName || '';
-        const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
-        const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
-        let typeLabel = 'Osobní';
-        let typeColor = '#43b581';
-        if (trainName.toLowerCase().includes('tlk') || trainName.toLowerCase().includes('eip') || trainName.toLowerCase().includes('rj') || trainName.toLowerCase().includes('ic')) {
-            typeLabel = 'Rychlík';
-            typeColor = '#ffb300';
-        } else if (trainName.toLowerCase().includes('mpe') || trainName.toLowerCase().includes('moe') || trainName.toLowerCase().includes('moj')) {
-            typeLabel = 'Nákladní';
-            typeColor = '#3fa7d6';
+    // Nová funkce: samostatné tabulky pro odjezdy a příjezdy s ručním potvrzením odjezdu
+    function renderDispatcherTable(containerId, items, movementType) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (!Array.isArray(items) || items.length === 0) {
+            container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
+            return;
         }
-        let delay = 0;
-        const timeStr = movementType === 'Odjezd' ? stop.departureTime : stop.arrivalTime;
-        if (timeStr) {
-            const planned = new Date(timeStr);
-            delay = Math.floor((new Date() - planned) / 60000);
+        // Seřadit podle času
+        const sortedItems = items.slice().sort((a, b) => {
+            const ta = new Date(movementType === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
+            const tb = new Date(movementType === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
+            return ta - tb;
+        });
+        // Stránkování
+        const perPage = 8;
+        if (!container._page) container._page = 1;
+        const totalPages = Math.max(1, Math.ceil(sortedItems.length / perPage));
+        if (container._page > totalPages) container._page = totalPages;
+        const start = (container._page - 1) * perPage;
+        const visibleItems = sortedItems.slice(start, start + perPage);
+        let html = `<div class="train-timetable-table-container"><table class="train-timetable-table" style="min-width:900px;width:100%;">`;
+        html += `<thead><tr>`;
+        html += `<th class="${movementType === 'Odjezd' ? 'edr-odjezdy' : 'edr-prijezdy'}">Vlak</th>`;
+        html += `<th class="${movementType === 'Odjezd' ? 'edr-odjezdy' : 'edr-prijezdy'}">Čas</th>`;
+        html += `<th class="${movementType === 'Odjezd' ? 'edr-odjezdy' : 'edr-prijezdy'}">Stanice</th>`;
+        html += `<th class="${movementType === 'Odjezd' ? 'edr-odjezdy' : 'edr-prijezdy'}">Kolej</th>`;
+        if (movementType === 'Příjezd') {
+            html += `<th class="edr-prijezdy">Další stanice</th>`;
+            html += `<th class="edr-prijezdy">Předchozí stanice</th>`;
         }
-        let highlight = false;
-        if (timeStr) {
-            const planned = new Date(timeStr);
-            if (Math.abs(new Date() - planned) <= 60000) highlight = true;
+        html += `</tr></thead><tbody>`;
+        visibleItems.forEach(({train, stop, track, nextStation, prevStation}, idx) => {
+            const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
+            const trainName = train.trainName || train.TrainName || '';
+            const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
+            const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
+            const timeStr = movementType === 'Odjezd' ? stop.departureTime : stop.arrivalTime;
+            const zebra = idx % 2 === 0 ? 'edr-zebra1' : 'edr-zebra2';
+            html += `<tr class="${zebra}">`;
+            html += `<td class="edr-vlak" onclick="window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')} )">${trainNo} <span class="edr-vlakname">${trainName}</span></td>`;
+            html += `<td class="edr-cas">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
+            html += `<td class="edr-stanice">${movementType === 'Odjezd' ? endStation : startStation}</td>`;
+            html += `<td class="edr-kolej">${track && track !== '-' ? track : '-'}</td>`;
+            if (movementType === 'Příjezd') {
+                html += `<td class="edr-dalsistanice">${nextStation || '-'}</td>`;
+                html += `<td class="edr-predchozistanice">${prevStation || '-'}</td>`;
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table></div>`;
+        // Pagination controls
+        if (totalPages > 1) {
+            html += `<div class=\"dispatcher-pagination\" style=\"text-align:center;margin:12px 0;\">`;
+            html += `<button class=\"profile-btn\" style=\"margin-right:8px;\" ${container._page === 1 ? 'disabled' : ''}>◀</button>`;
+            html += `<span style=\"color:#ffe066;font-weight:bold;margin:0 8px;\">Stránka ${container._page} / ${totalPages}</span>`;
+            html += `<button class=\"profile-btn\" style=\"margin-left:8px;\" ${container._page === totalPages ? 'disabled' : ''}>▶</button>`;
+            html += `</div>`;
         }
-        html += `<tr class=\"dispatcher-row\" style=\"background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;\">`;
-        html += `<td style=\"color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;white-space:normal;word-break:break-word;text-align:left;\" onclick=\"window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')} )\">${trainNo} <span style=\"color:${typeColor};font-weight:normal;\">${trainName}</span></td>`;
-        html += `<td style=\"font-weight:bold;padding:7px 10px;color:${movementType === 'Odjezd' ? '#43b581' : '#ffe066'};white-space:normal;word-break:break-word;text-align:left;\">${movementType === 'Odjezd' ? '⬆️ Odjezd' : '⬇️ Příjezd'}</td>`;
-        html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
-        html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${movementType === 'Odjezd' ? endStation : startStation}</td>`;
-        html += `<td style=\"color:#ffe066;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${track && track !== '-' ? track : '-'}</td>`;
-        html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${nextStation || '-'}</td>`;
-        html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${prevStation || '-'}</td>`;
-        html += `<td style=\"color:${typeColor};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${typeLabel}</td>`;
-        html += `<td style=\"color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
+        container.innerHTML = html;
+        // Event handler pro potvrzení odjezdu
         if (movementType === 'Odjezd') {
-            html += `<td style=\"text-align:center;\"><button class=\"profile-btn profile-btn-green confirm-departure-btn\" data-trainno=\"${trainNo}\" style=\"font-size:1em;padding:6px 18px;\">Potvrdit odjezd</button></td>`;
+            container.querySelectorAll('.confirm-departure-btn').forEach(btn => {
+                btn.onclick = function() {
+                    const trainNo = btn.getAttribute('data-trainno');
+                    btn.disabled = true;
+                    btn.textContent = 'Odjezd potvrzen';
+                    sendDiscordWebhookTrain(`✅ Odjezd vlaku ${trainNo} ze stanice byl ručně potvrzen výpravčím.`);
+                };
+            });
         }
-        html += `</tr>`;
-    });
-    html += `</tbody></table></div>`;
-    // Pagination controls
-    if (totalPages > 1) {
-        html += `<div class=\"dispatcher-pagination\" style=\"text-align:center;margin:12px 0;\">`;
-        html += `<button class=\"profile-btn\" style=\"margin-right:8px;\" ${container._page === 1 ? 'disabled' : ''}>◀</button>`;
-        html += `<span style=\"color:#ffe066;font-weight:bold;margin:0 8px;\">Stránka ${container._page} / ${totalPages}</span>`;
-        html += `<button class=\"profile-btn\" style=\"margin-left:8px;\" ${container._page === totalPages ? 'disabled' : ''}>▶</button>`;
-        html += `</div>`;
-    }
-    container.innerHTML = html;
-    // Event handler pro potvrzení odjezdu
-    if (movementType === 'Odjezd') {
-        container.querySelectorAll('.confirm-departure-btn').forEach(btn => {
-            btn.onclick = function() {
-                const trainNo = btn.getAttribute('data-trainno');
-                btn.disabled = true;
-                btn.textContent = 'Odjezd potvrzen';
-                sendDiscordWebhookTrain(`✅ Odjezd vlaku ${trainNo} ze stanice byl ručně potvrzen výpravčím.`);
-            };
-        });
-    }
-    // Event handler pro stránkování
-    const pagBtns = container.querySelectorAll('.dispatcher-pagination button');
-    if (pagBtns.length === 2) {
-        pagBtns[0].onclick = () => {
-            if (container._page > 1) {
-                container._page--;
-                renderDispatcherTable(containerId, items, movementType);
-            }
-        };
-        pagBtns[1].onclick = () => {
-            if (container._page < totalPages) {
-                container._page++;
-                renderDispatcherTable(containerId, items, movementType);
-            }
-        };
-    }
-    // Moderní styl pro tabulku a stránkování
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @media (max-width: 900px) {
-            .dispatcher-table th, .dispatcher-table td { font-size: 0.95em; padding: 5px 4px; }
-        }
-        @media (max-width: 600px) {
-            .dispatcher-table th, .dispatcher-table td { font-size: 0.85em; padding: 3px 2px; }
-        }
-        .dispatcher-table-modern { border-radius: 18px; box-shadow: 0 4px 32px #23272a99; background: rgba(44,47,51,0.98); }
-        .dispatcher-table thead th { position: sticky; top: 0; background: #23272a; z-index: 2; }
-        .dispatcher-table tr:hover { background: #23272a; }
-        .dispatcher-pagination { margin-top: 8px; }
-        .dispatcher-pagination button { font-size: 1.1em; font-weight: bold; border-radius: 8px; padding: 8px 18px; background: linear-gradient(90deg,#43b581 80%,#ffe066 100%); color: #23272a; border: none; box-shadow: 0 2px 8px #43b581; cursor: pointer; transition: box-shadow 0.2s, background 0.2s; }
-        .dispatcher-pagination button:disabled { background: #23272a; color: #aaa; cursor: not-allowed; box-shadow: none; }
-        .dispatcher-pagination span { font-size: 1.1em; }
-    `;
-    document.head.appendChild(style);
-}
-    fetchDispatcherData();
-    dispatcherRefreshInterval = setInterval(fetchDispatcherData, 15000); // auto-refresh každých 15s
-    panel.addEventListener('remove', () => {
-        if (dispatcherRefreshInterval) clearInterval(dispatcherRefreshInterval);
-    });
-}
-
-
-// Nová funkce: sloučená tabulka příjezdů/odjezdů
-function renderDispatcherUnifiedTable(containerId, departures, arrivals) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    const allItems = [];
-    departures.forEach(item => allItems.push({ ...item, movement: 'Odjezd' }));
-    arrivals.forEach(item => allItems.push({ ...item, movement: 'Příjezd' }));
-    if (allItems.length === 0) {
-        container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
-        return;
-    }
-    // Seřadit podle času (odjezd/příjezd) a zobrazit jen prvních 8 vlaků
-    allItems.sort((a, b) => {
-        const ta = new Date(a.movement === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
-        const tb = new Date(b.movement === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
-        return ta - tb;
-    });
-    const visibleItems = allItems.slice(0, 8);
-    let html = `<div style=\"overflow-x:auto;\"><table class=\"dispatcher-table\" style=\"min-width:1100px;width:100%;border-collapse:separate;border-spacing:0 6px;table-layout:fixed;\">`;
-    html += `<thead><tr>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:110px;">Vlak</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Pohyb</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:70px;">Čas</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:80px;">Kolej</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Další stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:180px;">Předchozí stanice</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Typ</th>`;
-    html += `<th style="color:#ffe066;background:#23272a;padding:8px 10px;position:sticky;top:0;z-index:2;white-space:normal;word-break:break-word;text-align:left;width:90px;">Zpoždění</th>`;
-    html += `</tr></thead><tbody>`;
-    const now = new Date();
-    visibleItems.forEach(({train, stop, track, nextStation, prevStation, movement}) => {
-        const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
-        const trainName = train.trainName || train.TrainName || '';
-        const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
-        const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
-        let typeLabel = 'Osobní';
-        let typeColor = '#43b581';
-        if (trainName.toLowerCase().includes('tlk') || trainName.toLowerCase().includes('eip') || trainName.toLowerCase().includes('rj') || trainName.toLowerCase().includes('ic')) {
-            typeLabel = 'Rychlík';
-            typeColor = '#ffb300';
-        } else if (trainName.toLowerCase().includes('mpe') || trainName.toLowerCase().includes('moe') || trainName.toLowerCase().includes('moj')) {
-            typeLabel = 'Nákladní';
-            typeColor = '#3fa7d6';
-        }
-        let delay = 0;
-        const timeStr = movement === 'Odjezd' ? stop.departureTime : stop.arrivalTime;
-        if (timeStr) {
-            const planned = new Date(timeStr);
-            delay = Math.floor((new Date() - planned) / 60000);
-        }
-        let highlight = false;
-        if (timeStr) {
-            const planned = new Date(timeStr);
-            if (Math.abs(new Date() - planned) <= 60000) highlight = true;
-        }
-    html += `<tr class=\"dispatcher-row\" style=\"background:${highlight ? '#ffe06633' : 'rgba(44,47,51,0.92)'};transition:background 0.2s;\">`;
-    html += `<td style=\"color:#fff;font-weight:bold;padding:7px 10px;cursor:pointer;white-space:normal;word-break:break-word;text-align:left;\" onclick=\"window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')})\">${trainNo} <span style=\"color:${typeColor};font-weight:normal;\">${trainName}</span></td>`;
-    html += `<td style=\"font-weight:bold;padding:7px 10px;color:${movement === 'Odjezd' ? '#43b581' : '#ffe066'};white-space:normal;word-break:break-word;text-align:left;\">${movement === 'Odjezd' ? '⬆️ Odjezd' : '⬇️ Příjezd'}</td>`;
-    html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
-    html += `<td style=\"color:#fff;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${movement === 'Odjezd' ? endStation : startStation}</td>`;
-    html += `<td style=\"color:#ffe066;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${track && track !== '-' ? track : '-'}</td>`;
-    html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${nextStation || '-'}</td>`;
-    html += `<td style=\"color:#43b581;font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${prevStation || '-'}</td>`;
-    html += `<td style=\"color:${typeColor};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${typeLabel}</td>`;
-    html += `<td style=\"color:${delay > 0 ? '#f04747' : '#43b581'};font-weight:bold;padding:7px 10px;white-space:normal;word-break:break-word;text-align:left;\">${delay > 0 ? '+'+delay+' min' : 'Včas'}</td>`;
-    html += `</tr>`;
-    });
-    html += `</tbody></table></div>`;
-    container.innerHTML = html;
-    // Responsivní styl
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @media (max-width: 900px) {
-            .dispatcher-table th, .dispatcher-table td { font-size: 0.95em; padding: 5px 4px; }
-        }
-        @media (max-width: 600px) {
-            .dispatcher-table th, .dispatcher-table td { font-size: 0.85em; padding: 3px 2px; }
-        }
-        .dispatcher-table thead th { position: sticky; top: 0; background: #23272a; z-index: 2; }
-        .dispatcher-table tr:hover { background: #23272a; }
-    `;
-    document.head.appendChild(style);
-}
-
-// Přidej globálně funkci getDelayHtml, aby byla dostupná i mimo showTrainDetailModal
-function getDelayHtml(delay) {
-    if (delay > 0) {
-        return `<span class="delay-blink" style="background:#f04747;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">+${delay} min</span>`;
-    } else {
-        return `<span style="background:#43b581;color:#fff;padding:2px 10px;border-radius:6px;font-weight:bold;margin-left:8px;">Včas</span>`;
-    }
-}
-
-// Přidej globální styl pro tabulky a boxy
-(function addCustomTableStyles() {
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .tables-vertical-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 32px;
-        }
-        .employee-table-container, .activity-table-container {
-            background: rgba(44,47,51,0.92);
-            border-radius: 18px;
-            box-shadow: 0 8px 32px #23272a99;
-            padding: 32px 28px;
-            max-width: 600px;
-            width: 100%;
-        }
-        .employee-table th, .activity-table th {
-            font-size: 1.1em;
-            color: #ffe066;
-            background: #23272a;
-            padding: 12px 0;
-        }
-        .employee-table td, .activity-table td {
-            font-size: 1em;
-            color: #fff;
-            padding: 10px 0;
-        }
-        .employee-table tr, .activity-table tr {
-            transition: background 0.2s;
-        }
-        .employee-table tr:hover, .activity-table tr:hover {
-            background: #2c2f33;
-        }
-        .employee-table, .activity-table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        .employee-table-container h2, .activity-table-container h2 {
-            font-size: 2em;
-            color: #fff;
-            text-align: center;
-            margin-bottom: 18px;
-            font-weight: bold;
-        }
-    `;
-    document.head.appendChild(style);
-})();
-
-// Oprava navázání eventu na tlačítko "Jízda" (delegace pro jistotu)
-document.addEventListener('click', function (e) {
-    const btn = e.target.closest('#jizda-btn');
-    if (btn) {
-        e.preventDefault();
-        showServerModal();
-    }
-});
-
-// Přidej funkci getVehicleImage pro zobrazení obrázku vlaku podle Vehicles pole
-function getVehicleImage(vehicles) {
-    // Pokud není pole nebo je prázdné, vrať defaultní obrázek
-    if (!Array.isArray(vehicles) || vehicles.length === 0) {
-        return '/Pictures/train_default.png';
-    }
-    // Vezmi první vozidlo, může být string nebo objekt
-    let v = vehicles[0];
-    if (typeof v === 'object') {
-        v = v.name || v.type || v.id || '';
-    }
-    // Přesné mapování na soubory v public\Pictures
-    if (v.includes('E186')) return '/Pictures/e186-134.jpg';
-    if (v.includes('ED250')) return '/Pictures/ed250-001.png';
-    if (v.includes('EN57')) return '/Pictures/en57-009.png';
-    if (v.includes('EN76')) return '/Pictures/en76-006.jpg';
-    if (v.includes('EP08')) return '/Pictures/ep08-001.jpg';
-    if (v.includes('ET22')) return '/Pictures/et22-243.png';
-    if (v.includes('ET25')) return '/Pictures/et25-002.jpg';
-    if (v.includes('EU07')) return '/Pictures/eu07-005.jpg';
-    // Defaultní obrázek
-    return '/Pictures/train_default.png';
-}
-
-// Živá tabulka zaměstnanců ve službě
-function initializeEmployeesTable() {
-    if (window.employeesListener) window.employeesListener.off && window.employeesListener.off();
-    window.employeesListener = db.ref('users').orderByChild('working').equalTo(true);
-    window.employeesListener.on('value', snap => {
-        const tbody = document.querySelector('#employee-table tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            snap.forEach(child => {
-                const val = child.val();
-                let avatarHtml = '';
-                if (val.avatar && val.id) {
-                    avatarHtml = `<img class="user-avatar" src="https://cdn.discordapp.com/avatars/${val.id}/${val.avatar}.png" alt="pfp">`;
-                } else {
-                    avatarHtml = `<span class="user-avatar" style="background:#23272a;color:#ffe066;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1em;">${(val.username||child.key)[0]||'?'} </span>`;
+        // Event handler pro stránkování
+        const pagBtns = container.querySelectorAll('.dispatcher-pagination button');
+        if (pagBtns.length === 2) {
+            pagBtns[0].onclick = () => {
+                if (container._page > 1) {
+                    container._page--;
+                    renderDispatcherTable(containerId, items, movementType);
                 }
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="text-align:left;">${avatarHtml} ${val.username || child.key}</td><td style="text-align:left;">${val.role || '-'} </td>`;
-                tbody.appendChild(tr);
-            });
+            };
+            pagBtns[1].onclick = () => {
+                if (container._page < totalPages) {
+                    container._page++;
+                    renderDispatcherTable(containerId, items, movementType);
+                }
+            };
         }
-    });
-}
-
-// Živá tabulka aktivních jízd
-function initializeActivityTable() {
-    if (window.activityListener) window.activityListener.off && window.activityListener.off();
-    window.activityListener = db.ref('activity');
-    window.activityListener.on('value', snap => {
-        const tbody = document.querySelector('#activity-table tbody');
-        if (tbody) {
-            tbody.innerHTML = '';
-            snap.forEach(child => {
-                const val = child.val();
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${val.username || child.key}</td><td>${val.trainNo || '-'} </td><td>${val.trainName || '-'} </td><td>${val.endStation || '-'} </td>`;
-                tbody.appendChild(tr);
-            });
-        }
-    });
-}
-
-// Nová funkce: živá tabulka řidičů (dummy data, uprav dle skutečné logiky)
-function initializeDriverTable() {
-    const tbody = document.querySelector('#driver-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    // TODO: Replace with real driver data source
-    // Example dummy data:
-    const drivers = [
-        { name: 'Petr', map: 'Praha', line: 'A' },
-        { name: 'Jana', map: 'Brno', line: 'B' }
-    ];
-    drivers.forEach(driver => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${driver.name}</td><td>${driver.map}</td><td>${driver.line}</td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-// Nová funkce: živá tabulka výpravčích
-function initializeDispatcherTable() {
-    const tbody = document.querySelector('#dispatcher-table tbody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    if (window.dispatcherListener) window.dispatcherListener.off && window.dispatcherListener.off();
-    window.dispatcherListener = db.ref('dispatchers');
-    window.dispatcherListener.on('value', snap => {
-        tbody.innerHTML = '';
-        snap.forEach(child => {
-            const val = child.val();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${val.username || child.key}</td><td>${val.server || '-'} </td><td>${val.station || '-'} </td>`;
-            tbody.appendChild(tr);
-        });
-    });
-}
-
-// Odstranění výpravčího ze stavu (např. při odchodu ze služby)
-function removeDispatcher(userId) {
-    db.ref('dispatchers/' + userId).remove();
-}
-
-// Přidání výpravčího do stavu (např. při příchodu do služby)
-function addDispatcher(user) {
-    db.ref('dispatchers/' + user.id).set({
-        username: user.username,
-        avatar: user.avatar,
-        id: user.id,
-        server: user.server || '-',
-        station: user.station || '-',
-        role: user.role || '-',
-        working: true
-    });
-}
-
-// Odeslání zprávy na Discord webhook při příchodu/odchodu výpravčího
-function sendDispatcherWebhook(user, action) {
-    const content = action === 'arrival'
-        ? `✅ ${user.username} přišel do služby jako výpravčí`
-        : `❌ ${user.username} odešel ze služby jako výpravčí`;
-    fetch("https://discordapp.com/api/webhooks/1409855386642812979/7v9D_DcBwHVbyHxyEa6M5camAMlFWBF4NXSQvPns8vMm1jpp-GczCjhDqc7Hdq_7B1nK", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content })
-    });
-}
-
-// Přidání/odebrání výpravčího při příchodu/odchodu ze služby
-document.addEventListener('DOMContentLoaded', () => {
-    const user = window.discordUser;
-    if (!user || !user.id) return;
-
-    // Při příchodu do služby
-    document.getElementById('profile-arrival').onclick = () => {
-        db.ref('users/' + user.id).update({ working: true });
-        sendDiscordWebhookArrival(`✅ ${user.username} přišel do služby`);
-        addDispatcher(user);
-    };
-
-    // Při odchodu ze služby
-    document.getElementById('profile-leave').onclick = () => {
-        db.ref('users/' + user.id).update({ working: false });
-        sendDiscordWebhookArrival(`❌ ${user.username} odešel ze služby`);
-        removeDispatcher(user.id);
-    };
-});
-
-// Oprava: při odchodu ze služby odstranění výpravčího ze stavu
-function endShift() {
-    panel.style.animation = 'modalFadeOut 0.4s';
-    setTimeout(() => {
-        panel.remove();
-        clearInterval(timeInterval);
-    }, 350);
-    // Odeslat zprávu na Discord webhook
-    let username = window.currentUser?.username;
-    if (!username && window.localStorage) {
-        const userStr = localStorage.getItem('discord_user');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                username = userObj.username;
-            } catch (e) {}
-        }
-        if (!username) {
-            username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
-        }
+        // Moderní styl pro tabulku a stránkování
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @media (max-width: 900px) {
+                .dispatcher-table th, .dispatcher-table td { font-size: 0.95em; padding: 5px 4px; }
+            }
+            @media (max-width: 600px) {
+                .dispatcher-table th, .dispatcher-table td { font-size: 0.85em; padding: 3px 2px; }
+            }
+            .dispatcher-table-modern { border-radius: 18px; box-shadow: 0 4px 32px #23272a99; background: rgba(44,47,51,0.98); }
+            .dispatcher-table thead th { position: sticky; top: 0; background: #23272a; z-index: 2; }
+            .dispatcher-table tr:hover { background: #23272a; }
+            .dispatcher-pagination { margin-top: 8px; }
+            .dispatcher-pagination button { font-size: 1.1em; font-weight: bold; border-radius: 8px; padding: 8px 18px; background: linear-gradient(90deg,#43b581 80%,#ffe066 100%); color: #23272a; border: none; box-shadow: 0 2px 8px #43b581; cursor: pointer; transition: box-shadow 0.2s, background 0.2s; }
+            .dispatcher-pagination button:disabled { background: #23272a; color: #aaa; cursor: not-allowed; box-shadow: none; }
+            .dispatcher-pagination span { font-size: 1.1em; }
+        `;
+        document.head.appendChild(style);
     }
-    fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: `:wave: **${username}** opustil stanici **${station.Name}** (${station.Prefix})` })
+
+    // Nová funkce: sloučená tabulka příjezdů/odjezdů
+    function renderDispatcherUnifiedTable(containerId, departures, arrivals) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const allItems = [];
+        departures.forEach(item => allItems.push({ ...item, movement: 'Odjezd' }));
+        arrivals.forEach(item => allItems.push({ ...item, movement: 'Příjezd' }));
+        if (allItems.length === 0) {
+            container.innerHTML = '<div style="color:#aaa;text-align:center;padding:18px 0;font-size:1.1em;">Žádné spoje</div>';
+            return;
+        }
+        // Seřadit podle času (odjezd/příjezd) a zobrazit jen prvních 8 vlaků
+        allItems.sort((a, b) => {
+            const ta = new Date(a.movement === 'Odjezd' ? a.stop.departureTime : a.stop.arrivalTime);
+            const tb = new Date(b.movement === 'Odjezd' ? b.stop.departureTime : b.stop.arrivalTime);
+            return ta - tb;
+        });
+        const visibleItems = allItems.slice(0, 8);
+        let html = `<div class="train-timetable-table-container"><table class="train-timetable-table" style="min-width:900px;width:100%;">`;
+        html += `<thead><tr>`;
+        html += `<th style="color:${movementType === 'Odjezd' ? '#43b581' : '#ffe066'};background:#23272a;">Vlak</th>`;
+        html += `<th style="color:${movementType === 'Odjezd' ? '#43b581' : '#ffe066'};background:#23272a;">Čas</th>`;
+        html += `<th style="color:${movementType === 'Odjezd' ? '#43b581' : '#ffe066'};background:#23272a;">Stanice</th>`;
+        html += `<th style="color:${movementType === 'Odjezd' ? '#43b581' : '#ffe066'};background:#23272a;">Kolej</th>`;
+        if (movementType === 'Příjezd') {
+            html += `<th style="color:#ffe066;background:#23272a;">Další stanice</th>`;
+            html += `<th style="color:#ffe066;background:#23272a;">Předchozí stanice</th>`;
+        }
+        html += `</tr></thead><tbody>`;
+        visibleItems.forEach(({train, stop, track, nextStation, prevStation}, idx) => {
+            const trainNo = train.trainNoLocal || train.trainNo || train.TrainNoLocal || train.TrainNo || '-';
+            const trainName = train.trainName || train.TrainName || '';
+            const endStation = train.endStation || train.EndStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[train.timetable.length-1].nameForPerson : '-') : '-');
+            const startStation = train.startStation || train.StartStation || (Array.isArray(train.timetable) ? (train.timetable.length > 0 ? train.timetable[0].nameForPerson : '-') : '-');
+            const timeStr = movementType === 'Odjezd' ? stop.departureTime : stop.arrivalTime;
+            const zebra = idx % 2 === 0 ? 'background:#23272a;' : 'background:#23272a99;';
+            html += `<tr style="${zebra}transition:background 0.2s;" onmouseover="this.style.background='#23272a66';" onmouseout="this.style.background='${zebra.replace('background:','')}';">`;
+            html += `<td style="color:#fff;font-weight:bold;padding:14px 16px;cursor:pointer;" onclick="window.showTrainDetailModal && window.showTrainDetailModal(null, ${JSON.stringify(train).replace(/"/g,'&quot;')} )">${trainNo} <span style="color:#aaa;font-weight:normal;">${trainName}</span></td>`;
+            html += `<td style="color:#fff;padding:14px 16px;">${timeStr ? timeStr.substring(11,16) : '-'}</td>`;
+            html += `<td style="color:#fff;padding:14px 16px;">${movementType === 'Odjezd' ? endStation : startStation}</td>`;
+            html += `<td style="color:#ffe066;font-weight:bold;padding:14px 16px;">${track && track !== '-' ? track : '-'}</td>`;
+            if (movementType === 'Příjezd') {
+                html += `<td style="color:#43b581;font-weight:bold;padding:14px 16px;">${nextStation || '-'}</td>`;
+                html += `<td style="color:#43b581;font-weight:bold;padding:14px 16px;">${prevStation || '-'}</td>`;
+            }
+            html += `</tr>`;
+        });
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    // Přidání/odebrání výpravčího při příchodu/odchodu ze služby
+    document.addEventListener('DOMContentLoaded', () => {
+        const user = window.discordUser;
+        if (!user || !user.id) return;
+
+        // Při příchodu do služby
+        document.getElementById('profile-arrival').onclick = () => {
+            db.ref('users/' + user.id).update({ working: true });
+            sendDiscordWebhookArrival(`✅ ${user.username} přišel do služby`);
+            addDispatcher(user);
+        };
+
+        // Při odchodu ze služby
+        document.getElementById('profile-leave').onclick = () => {
+            db.ref('users/' + user.id).update({ working: false });
+            sendDiscordWebhookArrival(`❌ ${user.username} odešel ze služby`);
+            removeDispatcher(user.id);
+        };
     });
-    // Odstranění výpravčího ze stavu
-    removeDispatcher(window.discordUser.id);
-}
 
-
-
+    // Oprava: při odchodu ze služby odstranění výpravčího ze stavu
+    function endShift() {
+        panel.style.animation = 'modalFadeOut 0.4s';
+        setTimeout(() => {
+            panel.remove();
+            clearInterval(timeInterval);
+        }, 350);
+        // Odeslat zprávu na Discord webhook
+        let username = window.currentUser?.username;
+        if (!username && window.localStorage) {
+            const userStr = localStorage.getItem('discord_user');
+            if (userStr) {
+                try {
+                    const userObj = JSON.parse(userStr);
+                    username = userObj.username;
+                } catch (e) {}
+            }
+            if (!username) {
+                username = localStorage.getItem('discord_username') || 'Neznámý uživatel';
+            }
+        }
+        fetch('https://discord.com/api/webhooks/1410994456626466940/7VL6CZeo7ST5GFDkeYo-pLXy_RmVpvwVF-MhEp7ECJq2KWh2Z9IQSLO7F9S6OgTiYFkL', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: `:wave: **${username}** opustil stanici **${station.Name}** (${station.Prefix})` })
+        });
+        // Odstranění výpravčího ze stavu
+        removeDispatcher(window.discordUser.id);
+    }
+} 
