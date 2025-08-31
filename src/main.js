@@ -1925,7 +1925,7 @@ function showDispatcherPanel(station, serverCode) {
         document.getElementById('profile-leave').onclick = () => {
             db.ref('users/' + user.id).update({ working: false });
             sendDiscordWebhookArrival(`❌ ${user.username} odešel ze služby`);
-            removeDispatcher(user.id);
+            // removeDispatcher(user.id); (odstraněno)
         };
     });
 
@@ -1956,6 +1956,6 @@ function showDispatcherPanel(station, serverCode) {
             body: JSON.stringify({ content: `:wave: **${username}** opustil stanici **${station.Name}** (${station.Prefix})` })
         });
         // Odstranění výpravčího ze stavu
-        removeDispatcher(window.discordUser.id);
+    // removeDispatcher(window.discordUser.id); (odstraněno)
     }
 } 
