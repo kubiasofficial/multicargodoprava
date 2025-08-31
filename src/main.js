@@ -1738,12 +1738,14 @@ function showDispatcherPanel(station, serverCode) {
                     return ta - tb;
                 };
                 dispatcherData.departures = departures.filter(d => {
-                    // Vlak zůstává v tabulce dokud neodjede ze stanice (hasLeft není true)
-                    return !d.stop.hasLeft;
+                    const t = new Date(d.stop.departureTime || d.stop.arrivalTime);
+                    // Vlak zůstává v tabulce dokud neodjede a čas odjezdu je >= aktuální čas
+                    return !d.stop.hasLeft && t >= now;
                 }).sort(sortByTime);
                 dispatcherData.arrivals = arrivals.filter(a => {
-                    // Vlak zůstává v tabulce dokud nepřijede do stanice (hasArrived není true)
-                    return !a.stop.hasArrived;
+                    const t = new Date(a.stop.arrivalTime || a.stop.departureTime);
+                    // Vlak zůstává v tabulce dokud nepřijede a čas příjezdu je >= aktuální čas
+                    return !a.stop.hasArrived && t >= now;
                 }).sort(sortByTime);
                 // Zobraz dvě samostatné tabulky pro odjezd a příjezd
                 renderDispatcherTable('dispatcher-departures', dispatcherData.departures, 'Odjezd');
