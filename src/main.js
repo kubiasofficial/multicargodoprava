@@ -1751,6 +1751,8 @@ function showDispatcherPanel(station, serverCode) {
             });
     }
     // Funkce pro stránkování lze upravit později, nyní zobrazujeme vše
+    // Načti data do tabulky hned po otevření panelu
+    fetchDispatcherData();
     // Nová funkce: samostatné tabulky pro odjezdy a příjezdy s ručním potvrzením odjezdu
     function renderDispatcherTable(containerId, items, movementType) {
         const container = document.getElementById(containerId);
