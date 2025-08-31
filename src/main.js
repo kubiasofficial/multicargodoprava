@@ -1605,7 +1605,7 @@ function showStationTakeoverModal(station, serverCode, isOccupied = false) {
             body: JSON.stringify({ content: `:train2: **${username}** převzal stanici **${station.Name}** (${station.Prefix})` })
         });
         // Přidání výpravčího do stavu
-        addDispatcher(window.discordUser);
+    // addDispatcher(window.discordUser); (odstraněno)
         showDispatcherPanel(station, serverCode);
     };
 }
@@ -1918,7 +1918,7 @@ function showDispatcherPanel(station, serverCode) {
         document.getElementById('profile-arrival').onclick = () => {
             db.ref('users/' + user.id).update({ working: true });
             sendDiscordWebhookArrival(`✅ ${user.username} přišel do služby`);
-            addDispatcher(user);
+            // addDispatcher(user); (odstraněno)
         };
 
         // Při odchodu ze služby
