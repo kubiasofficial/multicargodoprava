@@ -80,3 +80,40 @@ function showModernTrainPanel(trains) {
         renderTrainsModern(e.target.value);
     };
 }
+
+// Discord OAuth2 login logic
+window.addEventListener('DOMContentLoaded', () => {
+    // Oprava: modal může být null pokud ještě neexistuje
+    let modal = document.getElementById('discord-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'discord-modal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(24,26,32,0.96)';
+        modal.style.zIndex = '10000';
+        modal.style.display = 'none';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.innerHTML = `
+            <div style="background:#23272a;padding:48px 32px;border-radius:18px;box-shadow:0 8px 32px #23272a99;max-width:95vw;">
+                <h2 style="color:#ffe066;text-align:center;margin-bottom:24px;">Přihlášení přes Discord</h2>
+                <div style="text-align:center;">
+                    <a href="https://discord.com/oauth2/authorize?client_id=1137738857239320706&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&response_type=token&scope=identify" style="display:inline-block;padding:14px 32px;font-size:1.2em;font-weight:bold;background:#5865f2;color:#fff;border-radius:12px;text-decoration:none;box-shadow:0 2px 12px #23272a;">Přihlásit se přes Discord</a>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    // Funkce pro zobrazení/skrytí modalu
+    function showDiscordModal() {
+        if (modal) modal.style.display = 'flex';
+    }
+    function hideDiscordModal() {
+        if (modal) modal.style.display = 'none';
+    }
+    // Zbytek kódu zůstává stejný
+});
